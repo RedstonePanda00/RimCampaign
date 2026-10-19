@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><GameProject>true</GameProject></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../RimCampaign.Editor/RimCampaign.Editor.csproj" /></ItemGroup>
+</Project>

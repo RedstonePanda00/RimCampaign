@@ -1,0 +1,22 @@
+<Defs>
+  <ScenPartDef>
+    <defName>RC_CampaignPart</defName><label>campaign</label><scenPartClass>RimCampaign.Runtime.ScenPart_Campaign</scenPartClass>
+  </ScenPartDef>
+  <GenStepDef>
+    <defName>RC_MapContents</defName><order>10</order><genStep Class="RimCampaign.Runtime.GenStep_Campaign" />
+  </GenStepDef>
+  <MapGeneratorDef>
+    <defName>RC_Pocket</defName>
+    <genSteps><li>RC_MapContents</li></genSteps>
+    <pocketMapProperties><biome>TemperateForest</biome><temperature>21</temperature><destroyOnParentMapAbandoned>false</destroyOnParentMapAbandoned></pocketMapProperties>
+  </MapGeneratorDef>
+  <FactionDef ParentName="FactionBase">
+    <defName>RC_MapFaction</defName><label>campaign faction</label><fixedName>Campaign faction</fixedName>
+    <humanlikeFaction>true</humanlikeFaction><techLevel>Industrial</techLevel>
+    <hidden>true</hidden><displayInFactionSelection>false</displayInFactionSelection>
+    <canMakeRandomly>false</canMakeRandomly><canGenerateQuestSites>false</canGenerateQuestSites>
+    <requiredCountAtGameStart>0</requiredCountAtGameStart><maxConfigurableAtWorldCreation>0</maxConfigurableAtWorldCreation>
+    <raidsForbidden>true</raidsForbidden><autoFlee>false</autoFlee><basicMemberKind>Colonist</basicMemberKind>
+    <backstoryFilters><li><categories><li>Outlander</li></categories></li></backstoryFilters>
+  </FactionDef>
+</Defs>

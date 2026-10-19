@@ -1,0 +1,147 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using System.Xml.Linq;
+using RimCampaign.Core;
+
+class Program
+{
+    static int count;
+    static void Assert(bool ok, string message) { count++; if (!ok) throw new Exception(message); }
+    class Host : IHost {
+        public int Effects;public bool Dead;public List<string> Sources=new List<string>();
+        public double Read(string key) => Dead&&key.StartsWith("dead:")?1:0;
+        public bool Execute(Act a, string source, double dt) { Effects++;Sources.Add(source);return true; }
+    }
+    static Act A(string kind, string target = "", double value = 0, string text = "") => new Act { Kind = kind, Target = target, Value = value, Text = text };
+    static void Main()
+    {
+        var map = new MapSpec();
+        map.Objectives.Add(new Objective { Id = "hero", Name = "Hero alive" });
+        map.Rules.Add(new Rule { Actions = new List<Act> { A("Objective", "hero", text:"Failed"), A("Fail"), A("Win") } });
+        map.Defeat.Add(A("Wait", value:2)); map.Defeat.Add(A("Effect"));
+        var host = new Host(); var s = new RunState(); var e = new Engine(map, s, host); e.Start(); e.Tick(1, 1);
+        Assert(s.Phase == "Failing" && s.Objectives["hero"] == "Failed", "failure wins race");
+        e.Tick(0, 1); Assert(s.Phase == "Failing", "failure wait");
+        var loaded = Json.Copy(s); e = new Engine(map, loaded, host); e.Tick(0, 1);
+        Assert(loaded.Phase == "Defeated" && host.Effects == 1, "restore wait then effect once");
+        e.Tick(10, 10); Assert(host.Effects == 1, "terminal no replay");
+        map = new MapSpec { Entry = new List<Act> { A("Set","x",1), A("Wait",value:2), A("Add","x",3) } };
+        s = new RunState(); e = new Engine(map,s,host); e.Start(); e.Tick(1,1);
+        Assert(s.Variables["x"] == 1, "wait blocks subsequent effect");
+        s = Json.Copy(s); e = new Engine(map,s,host); e.Tick(1,1);
+        Assert(s.Variables["x"] == 4, "completed effect not repeated after load");
+        map = new MapSpec { Entry = new List<Act> { new Act { Kind="Parallel", Steps=new List<Act> { A("Wait",value:1), A("Wait",value:3) } }, A("Win") } };
+        s = new RunState(); e = new Engine(map,s,host); e.Start(); e.Tick(1,1); Assert(s.Phase=="Running","parallel joins");
+        e.Tick(2,2); Assert(s.Phase=="Succeeded","parallel completion");
+        map=new MapSpec();
+        map.Rules.Add(new Rule{Id="multi",Once=false,Events=new List<EventSpec>{new EventSpec{Kind="Enter"},new EventSpec{Kind="Enter",Target="exit"}},Actions=new List<Act>{A("Effect")}});
+        host=new Host();s=new RunState();e=new Engine(map,s,host);e.Start();e.Emit("Enter","exit","hero");e.Emit("Enter","exit","scout");
+        s=Json.Copy(s);e=new Engine(map,s,host);e.Tick(0,0);
+        Assert(host.Sources.SequenceEqual(new[]{"hero","scout"})&&s.Firings["multi"]==2,"repeat rule preserves each event source after save");
+        e.Tick(0,0);Assert(host.Effects==2,"consumed events are not replayed");
+        map.Rules[0].Once=true;host=new Host();s=new RunState();e=new Engine(map,s,host);e.Start();e.Emit("Enter","exit","hero");e.Emit("Enter","exit","scout");e.Tick(0,0);
+        Assert(host.Effects==1&&s.Firings["multi"]==1,"once rule coalesces matching events");
+        map=new MapSpec{Rules=new List<Rule>{new Rule{Once=false,Events=new List<EventSpec>{new EventSpec{Kind="Elapsed",Seconds=0}},Actions=new List<Act>{A("Effect")}}}};
+        host=new Host();s=new RunState();e=new Engine(map,s,host);e.Start();e.Tick(0,0);e.Tick(1,1);
+        Assert(host.Effects==1,"zero elapsed event fires once at entry");
+        map=new MapSpec{Entry=new List<Act>{A("Fail"),A("Effect")},Defeat=new List<Act>{A("Effect")}};
+        host=new Host();s=new RunState();e=new Engine(map,s,host);e.Start();e.Enqueue(new List<Act>{A("Effect")});e.Tick(0,0);
+        Assert(host.Effects==0&&s.Phase=="Failing","failure stops subsequent effects and other ordinary fibers");
+        e.Tick(0,0);Assert(host.Effects==1&&s.Phase=="Defeated","failure actions still execute once after lock");
+        map=new MapSpec{Entry=new List<Act>{new Act{Kind="Parallel",Steps=new List<Act>{new Act{Kind="Sequence",Steps=new List<Act>{A("Fail"),A("Effect")}},A("Effect")}}}};
+        host=new Host();s=new RunState();e=new Engine(map,s,host);e.Start();e.Tick(0,0);
+        Assert(host.Effects==0&&s.Phase=="Failing","nested failure stops sibling parallel branches");
+        map=new MapSpec{Objectives=new List<Objective>{new Objective{Id="survive",Mode="Survive",Role="hero"}},Entry=new List<Act>{A("Effect"),A("Win")}};
+        host=new Host{Dead=true};s=new RunState();e=new Engine(map,s,host);e.Start();e.Tick(0,0);
+        Assert(host.Effects==0&&s.Phase=="Failing"&&s.Objectives["survive"]=="Failed","required death locks before ordinary effects");
+        map.Objectives[0].Required=false;host=new Host{Dead=true};s=new RunState();e=new Engine(map,s,host);e.Start();e.Tick(0,0);
+        Assert(host.Effects==1&&s.Phase=="Succeeded"&&s.Objectives["survive"]=="Failed","optional objective failure permits victory");
+        var p = new Project { Name="Demo", Maps=new List<MapSpec> {new MapSpec()} };
+        p.Maps[0].Objects.Add(new Placement { Def=new DefRef { Name="Weapon", Package="content.a" } });
+        var catalog = new[] { new Dependency {PackageId="rimcampaign.framework"}, new Dependency {PackageId="content.a",Requires=new List<string>{"base.b"}},new Dependency {PackageId="base.b"} };
+        var report=Dependencies.Scan(p,catalog);
+        Assert(report.Errors.Count==0 && report.Direct.Count==2,"minimum direct deps");
+        Assert(report.LoadAfter.Contains("base.b") && !report.Direct.Any(d=>d.PackageId=="base.b"),"transitive ordering");
+        Assert(!report.LoadAfter.Contains("void.charactereditor"),"authoring tool not runtime dep");
+        catalog[2].After.Add(p.PackageId); report=Dependencies.Scan(p,catalog); Assert(report.Errors.Any(x=>x.Contains("cycle")),"ordering cycle");
+        var history=new History<Project>(p); history.Edit(x=>x.Name="Changed"); history.Undo(); Assert(history.Value.Name=="Demo","undo"); history.Redo(); Assert(history.Value.Name=="Changed","redo");
+        var original=p.Maps[0].Objects[0]; var copy=History<Project>.CopyObjects(new[]{original},2,3)[0];
+        Assert(copy.Id!=original.Id && copy.Position.X==2 && original.Position.X==0,"copy remaps IDs and independent data");
+        var campaign=new Campaign {Start="a",Nodes=new List<Node>{new Node{Id="a",Map=p.Maps[0].Id},new Node{Id="b",Map=p.Maps[0].Id}},Edges=new List<Edge>{new Edge{From="a",To="b"},new Edge{From="b",To="a"}}};
+        p.Campaigns.Add(campaign); Assert(Validation.Check(p).Any(x=>x.Message.Contains("Cycle")),"campaign cycle");
+        Assert(Validation.Check(Demo.Create()).Count==0,"demo valid");
+        var exportParent = Path.Combine(Path.GetTempPath(), "RimCampaign17-" + Guid.NewGuid().ToString("N"));
+        try {
+            var demo = Demo.Create();
+            var demoReport = Dependencies.Scan(demo, new[] { new Dependency { PackageId="rimcampaign.framework", Name="RimCampaign" } });
+            string exported = Exporter.Export(demo, exportParent, demoReport);
+            Assert(XDocument.Load(Path.Combine(exported,"About","About.xml")).Descendants("supportedVersions").Single().Elements().Select(x=>x.Value).SequenceEqual(new[]{"1.7"}), "export supports only 1.7");
+            Assert(XDocument.Load(Path.Combine(exported,"LoadFolders.xml")).Root.Element("v1.7") != null, "export load folders target 1.7");
+            Assert(File.Exists(Path.Combine(exported,"1.7","Defs","Campaigns.xml")) && File.Exists(Path.Combine(exported,"1.7","Campaigns","project.json")), "1.7 campaign payload exported");
+            Assert(!Directory.Exists(Path.Combine(exported,"1.6")), "export contains no 1.6 runtime");
+        } finally { if (Directory.Exists(exportParent)) Directory.Delete(exportParent, true); }
+        var generatedProject=Demo.Create();
+        var legacyProject=Json.Read<Project>(Json.Write(generatedProject).Replace("\"Bosses\":[],", ""));
+        Assert(legacyProject.Bosses!=null&&legacyProject.Bosses.Count==0,"missing optional boss collection restored for existing projects");
+        var generatedProfile=generatedProject.Profiles[0];generatedProfile.Payload="";
+        generatedProfile.GenerateFrom=new DefRef{Kind="PawnKindDef",Name="ModPawn",Package="content.a"};
+        Assert(!Validation.Check(generatedProject).Any(i=>i.Message.Contains("profile is empty")),"generated profile does not require serialized character");
+        var generatedDeps=Dependencies.Scan(generatedProject,new[]{new Dependency{PackageId="rimcampaign.framework"},new Dependency{PackageId="content.a"}});
+        Assert(generatedDeps.Direct.Any(d=>d.PackageId=="content.a"),"generated PawnKind dependency exported");
+        generatedProject.Bosses.Add(new BossTemplate{Name="Test",Phases=new List<BossPhase>{new BossPhase(),new BossPhase{HealthFraction=.5}}});
+        var roundTrip=Json.Copy(generatedProject);
+        Assert(roundTrip.Bosses[0].Phases[1].HealthFraction==.5&&roundTrip.Profiles[0].GenerateFrom.Name=="ModPawn","boss/generated config roundtrip");
+        roundTrip.Bosses[0].Phases[1].HealthFraction=1;
+        Assert(Validation.Check(roundTrip).Any(i=>i.Message.Contains("strictly descend")),"reject duplicate phase thresholds");
+        roundTrip.Bosses[0].MaxHealth=double.NaN;
+        Assert(Validation.Check(roundTrip).Any(i=>i.Message.Contains("finite")),"reject non-finite boss health");
+        var fm=new MapSpec();var extra=new MapFaction{Name="Third"};var ally=new MapFaction{Name="Ally",Side="Ally"};var enemy=new MapFaction{Name="Enemy",Side="Hostile"};var neutral=new MapFaction{Name="Neutral"};
+        fm.Factions.AddRange(new[]{extra,ally,enemy,neutral});
+        Assert(fm.Factions[0].Id=="Player"&&MapFactions.Relation(fm,"Player","Hostile")=="Hostile","default map teams and hostility");
+        Assert(MapFactions.Relation(fm,extra.Id,"Player")=="Neutral"&&MapFactions.Relation(fm,extra.Id,neutral.Id)=="Neutral","neutral factions remain independent");
+        Assert(MapFactions.Relation(fm,enemy.Id,"Hostile")=="Ally"&&MapFactions.Relation(fm,"Hostile",enemy.Id)=="Ally","enemies automatically share one side");
+        Assert(MapFactions.Relation(fm,ally.Id,"Player")=="Ally"&&MapFactions.Relation(fm,ally.Id,enemy.Id)=="Hostile","player allies oppose the enemy side");
+        MapFactions.SetSide(fm,extra.Id,"Ally");Assert(MapFactions.Relation(fm,extra.Id,ally.Id)=="Ally","all player allies share one side");
+        MapFactions.SetSide(fm,"Hostile","Neutral");
+        Assert(MapFactions.Relation(new MapSpec(),"Player","Hostile")=="Hostile","map configurations independent");
+        Assert(MapFactions.Relation(Json.Copy(fm),"Hostile","Player")=="Neutral","map sides roundtrip");
+        var oldMap=new MapSpec();oldMap.Factions[1].Side=null;
+        oldMap.FactionRelations.Add(new MapFactionRelation{A="Hostile",B="Player",Kind="Ally"});
+        Assert(Json.Copy(oldMap).Factions[1].Side=="Ally","legacy pairwise relations migrate relative to player");
+        var factionProject=new Project{Maps=new List<MapSpec>{fm}};
+        fm.Objects.Add(new Placement{Kind="Marker",Faction="missing"});
+        Assert(Validation.Check(factionProject).Any(i=>i.Message.Contains("Unknown map faction")),"reject undefined faction assignment");
+        fm.Objects.Clear();fm.Factions[1].Side="invalid";
+        Assert(Validation.Check(factionProject).Any(i=>i.Message.Contains("Invalid map faction side")),"reject undefined side");
+        var strokes=new History<Project>(new Project());var snapshot=Json.Write(strokes.Value);
+        strokes.Value.Name="stroke";strokes.Value.Maps.Add(new MapSpec());strokes.CommitAppliedChange(snapshot);strokes.Undo();
+        Assert(strokes.Value.Maps.Count==0,"applied brush stroke is one undo transaction");
+        strokes.Redo();Assert(strokes.Value.Maps.Count==1&&strokes.Value.Name=="stroke","brush stroke redo restores complete result");
+        var triggerMap=new MapSpec();
+        var hostless=new Rule{Id="hostless",Events=new List<EventSpec>{new EventSpec{Kind="Death"}},Actions=new List<Act>{A("Effect")}};
+        var bound=new Rule{Id="bound",Host="pawn1",Once=false,Events=new List<EventSpec>{new EventSpec{Kind="Death"},new EventSpec{Kind="DamageWindow"}},Actions=new List<Act>{A("Effect")}};
+        triggerMap.Rules.AddRange(new[]{hostless,bound});host=new Host();s=new RunState();e=new Engine(triggerMap,s,host);
+        e.Emit("Death","pawn1");e.EmitForRule("hostless","Death");e.Tick(0,0);Assert(host.Effects==0,"hostless/global death cannot fire host-only conditions");
+        e.EmitForRule("bound","Death","pawn1");e.Tick(0,0);Assert(host.Effects==1&&s.Firings["bound"]==1,"scoped death only fires its bound rule");
+        e.EmitForRule("bound","DamageWindow","pawn1");e.Tick(0,0);Assert(host.Effects==2,"persistent bound trigger can fire again");
+        bound.Once=true;e.EmitForRule("bound","DamageWindow");e.Tick(0,0);Assert(host.Effects==2,"once switch prevents replay");
+        var memory=new RuleMemory();memory.AddDamage(0,25);memory.AddDamage(0,5);Assert(memory.Damage.Count==1,"damage coalesced per simulation tick");
+        memory.AddDamage(61,20);Assert(!memory.ConsumeDamage(61,1,40),"rolling window expires stale damage");
+        memory.AddDamage(62,20);Assert(memory.ConsumeDamage(62,1,40)&&memory.Damage.Count==0,"threshold consumes whole accumulation");
+        memory.AddDamage(63,0);memory.AddDamage(63,double.NaN);Assert(memory.Damage.Count==0,"zero/nonfinite damage ignored");
+        memory.Inside["pawn1"]=true;memory.Dead=true;memory.AddDamage(70,5);s.Triggers["bound"]=memory;
+        var restored=Json.Copy(s);Assert(restored.Triggers["bound"].Inside["pawn1"]&&restored.Triggers["bound"].Dead&&restored.Triggers["bound"].Damage[0].Amount==5,"trigger edges and accumulation survive save/reload");
+        Assert(Json.Read<Placement>("{\"Kind\":\"PawnKind\"}").SpawnAtStart,"existing placements still spawn on entry");
+        Assert(Json.Read<Rule>("{}").DamageWindowSeconds==5&&Json.Read<Rule>("{}").Radius==5,"legacy rule defaults populated");
+        var phases=new BossTemplate{MaxHealth=1000,Phases=new List<BossPhase>{new BossPhase(),new BossPhase{HealthFraction=.6,LockHealth=true},new BossPhase{HealthFraction=.3,LockHealth=true,AutoUnlock=false}}};
+        var hit=BossHealth.Apply(phases,1000,0,false,5000);Assert(hit.Health==600&&hit.Phase==1&&hit.Locked&&hit.Entered.SequenceEqual(new[]{1}),"overkill stops at first lock, discards overflow");
+        hit=BossHealth.Apply(phases,hit.Health,hit.Phase,true,5000);Assert(hit.Health==600&&hit.Entered.Count==0,"locked damage neither consumes HP nor reenters phase");
+        hit=BossHealth.Apply(phases,600,1,false,5000);Assert(hit.Health==300&&hit.Phase==2&&hit.Locked,"unlock allows next threshold but never skips a lock");
+        hit=BossHealth.Apply(phases,300,2,false,5000);Assert(hit.Health==0&&!hit.Locked,"final unlocked phase can die");
+        phases.Phases[1].LockHealth=phases.Phases[2].LockHealth=false;hit=BossHealth.Apply(phases,1000,0,false,800);Assert(hit.Health==200&&hit.Entered.SequenceEqual(new[]{1,2}),"unlocked crossed phases each emit an entry");
+        Assert(Json.Read<BossPhase>("{}").AutoUnlock&&Json.Read<BossPhase>("{}").OnEnter.Count==0,"legacy boss phase defaults");
+        Console.WriteLine("PASS: " + count + " assertions");
+    }
+}

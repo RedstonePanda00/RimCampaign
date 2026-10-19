@@ -1,0 +1,11 @@
+<Project>
+  <Target Name="DeployModAssembly" AfterTargets="Build" Condition="'$(MSBuildProjectName)' != 'RimCampaign.Tests'">
+    <PropertyGroup>
+      <ModOutput>$(MSBuildThisFileDirectory)1.7\Assemblies</ModOutput>
+      <ModOutput Condition="'$(MSBuildProjectName)' == 'RimCampaign.Integration.CharacterEditor'">$(MSBuildThisFileDirectory)1.7\Integrations\CharacterEditor\Assemblies</ModOutput>
+    </PropertyGroup>
+    <MakeDir Directories="$(ModOutput)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModOutput)" />
+    <Copy SourceFiles="@(ReferenceCopyLocalPaths)" DestinationFolder="$(ModOutput)" Condition="'$(MSBuildProjectName)' == 'RimCampaign.Editor'" />
+  </Target>
+</Project>

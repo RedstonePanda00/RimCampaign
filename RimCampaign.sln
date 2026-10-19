@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Core", "Source\RimCampaign.Core\RimCampaign.Core.csproj", "{630D27B8-514D-44E4-906D-06C0E137CC4F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.SDK", "Source\RimCampaign.SDK\RimCampaign.SDK.csproj", "{E0C649E5-EB31-4BD6-A393-5ED27B94EBE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Runtime", "Source\RimCampaign.Runtime\RimCampaign.Runtime.csproj", "{FC5CB9B7-E281-4671-9F7E-F3A36E6D029E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Editor", "Source\RimCampaign.Editor\RimCampaign.Editor.csproj", "{A3311559-DA56-483E-B633-7F8656025E47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Integration.CharacterEditor", "Source\RimCampaign.Integration.CharacterEditor\RimCampaign.Integration.CharacterEditor.csproj", "{C376F717-D235-4588-98AA-42F8BFD5A906}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Tests", "Source\RimCampaign.Tests\RimCampaign.Tests.csproj", "{FA93831E-9825-4CD1-8478-529EF16C92BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{630D27B8-514D-44E4-906D-06C0E137CC4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{630D27B8-514D-44E4-906D-06C0E137CC4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{630D27B8-514D-44E4-906D-06C0E137CC4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{630D27B8-514D-44E4-906D-06C0E137CC4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0C649E5-EB31-4BD6-A393-5ED27B94EBE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0C649E5-EB31-4BD6-A393-5ED27B94EBE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0C649E5-EB31-4BD6-A393-5ED27B94EBE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0C649E5-EB31-4BD6-A393-5ED27B94EBE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC5CB9B7-E281-4671-9F7E-F3A36E6D029E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC5CB9B7-E281-4671-9F7E-F3A36E6D029E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC5CB9B7-E281-4671-9F7E-F3A36E6D029E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC5CB9B7-E281-4671-9F7E-F3A36E6D029E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3311559-DA56-483E-B633-7F8656025E47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3311559-DA56-483E-B633-7F8656025E47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3311559-DA56-483E-B633-7F8656025E47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3311559-DA56-483E-B633-7F8656025E47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C376F717-D235-4588-98AA-42F8BFD5A906}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C376F717-D235-4588-98AA-42F8BFD5A906}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C376F717-D235-4588-98AA-42F8BFD5A906}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C376F717-D235-4588-98AA-42F8BFD5A906}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA93831E-9825-4CD1-8478-529EF16C92BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA93831E-9825-4CD1-8478-529EF16C92BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA93831E-9825-4CD1-8478-529EF16C92BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA93831E-9825-4CD1-8478-529EF16C92BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{630D27B8-514D-44E4-906D-06C0E137CC4F} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
+		{E0C649E5-EB31-4BD6-A393-5ED27B94EBE9} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
+		{FC5CB9B7-E281-4671-9F7E-F3A36E6D029E} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
+		{A3311559-DA56-483E-B633-7F8656025E47} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
+		{C376F717-D235-4588-98AA-42F8BFD5A906} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
+		{FA93831E-9825-4CD1-8478-529EF16C92BC} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
+	EndGlobalSection
+EndGlobal

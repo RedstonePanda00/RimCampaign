@@ -1,0 +1,7 @@
+<loadFolders>
+  <v1.7>
+    <li>/</li>
+    <li>1.7</li>
+    <li IfModActive="void.charactereditor">1.7/Integrations/CharacterEditor</li>
+  </v1.7>
+</loadFolders>
