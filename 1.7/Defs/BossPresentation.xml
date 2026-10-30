@@ -1,0 +1,3 @@
+<Defs>
+  <HediffDef><defName>RC_BossIncapacitated</defName><label>暂时失能</label><description>该单位被击倒，正在恢复。</description><hediffClass>Hediff</hediffClass><isBad>true</isBad><stages><li><painOffset>1</painOffset></li></stages></HediffDef>
+</Defs>

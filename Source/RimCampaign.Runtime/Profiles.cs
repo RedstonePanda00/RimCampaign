@@ -121,6 +121,7 @@ namespace RimCampaign.Runtime
                 var t=ThingMaker.MakeThing(Def<ThingDef>(x.Def),Def<ThingDef>(x.Stuff));t.stackCount=x.Count;
                 if(t.def.useHitPoints)t.HitPoints=Math.Max(1,Math.Min(x.HitPoints,t.MaxHitPoints));
                 if(x.Quality>=0)t.TryGetComp<CompQuality>()?.SetQuality((QualityCategory)x.Quality,ArtGenerationContext.Outsider);
+                CampaignItems.InitializeBook(t);
                 if(x.Color!=null)t.TryGetComp<CompColorable>()?.SetColor(ColorValue(x.Color));return t;
             }
             pawn.apparel?.DestroyAll();pawn.equipment?.DestroyAllEquipment();pawn.inventory?.innerContainer.ClearAndDestroyContents();

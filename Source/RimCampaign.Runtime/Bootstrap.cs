@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -77,7 +77,7 @@ namespace RimCampaign.Runtime
     {
         static bool Prefix(ref Map __result,bool isPocketMap) {
             var c=Current.Game?.GetComponent<CampaignController>();
-            if(isPocketMap || c?.Starting!=true || Current.Game.Maps.Count!=0)return true;
+            if(isPocketMap || CampaignMaps.GeneratingNative || c?.Starting!=true || !c.StoryActive || Current.Game.Maps.Count!=0)return true;
             var m=c.MapSpec;
             __result=CampaignMaps.Generate(m,Find.GameInitData.startingTile);
             c.Map=__result;return false;
@@ -85,9 +85,18 @@ namespace RimCampaign.Runtime
     }
     public static class CampaignMaps
     {
+        internal static bool GeneratingNative;
         public static Map Generate(MapSpec spec,PlanetTile anchor){
+            if(spec.Base=="PocketMission"){
+                var native=(MapParent)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.GetNamed("RC_MissionPreview"));
+                native.Tile=anchor;Find.WorldObjects.Add(native);
+                GeneratingNative=true;
+                try{return MapGenerator.GenerateMap(new IntVec3(spec.Width,1,spec.Height),native,DefDatabase<MapGeneratorDef>.GetNamed("RC_MissionTerrain"));}
+                finally{GeneratingNative=false;}
+            }
             var parent=(PocketMapParent)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.PocketMap);
-            parent.Tile=anchor;parent.mapGenerator=DefDatabase<MapGeneratorDef>.GetNamed("RC_Pocket");
+            bool space=spec.TerrainInitialization!=null&&TerrainInitializer.Resolve(spec.TerrainInitialization.Biome).inVacuum;
+            parent.Tile=anchor;parent.mapGenerator=DefDatabase<MapGeneratorDef>.GetNamed(space?"RC_PocketSpace":"RC_Pocket");
             var map=MapGenerator.GenerateMap(new IntVec3(spec.Width,1,spec.Height),parent,parent.mapGenerator,isPocketMap:true);
             Find.World.pocketMaps.Add(parent);return map;
         }
@@ -98,12 +107,14 @@ namespace RimCampaign.Runtime
         public override void Generate(Map map,GenStepParams parms) {
             var c=Current.Game.GetComponent<CampaignController>();
             var spec=c.MapSpec;
+            TerrainInitializer.ApplyEnvironment(map,spec.TerrainInitialization);
+            TerrainInitializer.ClearLayoutOverlaps(spec);
             foreach(var cell in map.AllCells) {
                 map.terrainGrid.SetTerrain(cell,DefDatabase<TerrainDef>.GetNamed(spec.Terrain.Name));
                 map.fogGrid.Unfog(cell);
             }
             MapGenerator.PlayerStartSpot=map.Center;
-            foreach(var o in spec.Objects.Where(o=>o.Kind!="Pawn"&&o.Kind!="Marker"&&o.SpawnAtStart)) c.Place(o,map);
+            foreach(var o in spec.Objects.Where(o=>o.Kind!="Pawn"&&o.Kind!="Marker"&&o.SpawnAtStart).OrderBy(TerrainSurfaces.SpawnOrder)) c.Place(o,map);
         }
     }
 }

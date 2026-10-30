@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <HediffDef>
+    <defName>RC_Unconscious</defName>
+    <label>制伏昏迷</label>
+    <description>战役中的非致命制伏状态。不会自行苏醒。</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <stages><li><capMods><li><capacity>Consciousness</capacity><setMax>0.1</setMax></li></capMods></li></stages>
+  </HediffDef>
+</Defs>

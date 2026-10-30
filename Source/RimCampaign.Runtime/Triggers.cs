@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
@@ -10,6 +10,8 @@ namespace RimCampaign.Runtime
 {
     public partial class CampaignController
     {
+        readonly Dictionary<string,Pawn> taskPawns=new Dictionary<string,Pawn>();
+        public void RegisterTaskPawn(Pawn pawn){taskPawns[pawn.ThingID]=pawn;}
         public bool QueueBossPhase(Map owner,BossRecord record,int phaseIndex) {
             var phase=record.Template.Phases[phaseIndex];
             // Empty phases need no campaign action runner, including standalone Bosses.
@@ -24,9 +26,15 @@ namespace RimCampaign.Runtime
             if(id.StartsWith("role:"))id=id.Substring(5);
             if(Actors.TryGetValue(id,out var actor))return actor;
             if(Objects.TryGetValue(id,out var thing))return thing as Pawn;
-            var placement=MapSpec.Objects.FirstOrDefault(p=>p.Id==id&&p.Kind=="Pawn");
-            if(placement!=null&&Actors.TryGetValue(placement.Role,out actor))return actor;
-            return Map?.mapPawns.AllPawnsSpawned.FirstOrDefault(p=>p.ThingID==id);
+            if(taskPawns.TryGetValue(id,out actor))return actor;
+            string role=TaskCatalog.For(this).Role(id);
+            if(role!=null&&Actors.TryGetValue(role,out actor))return actor;
+            // Resolve serialized instance references once, including pawns still inside pods.
+            // A task tick must not scan every wall/terrain placement to resolve a soldier.
+            foreach(var value in Objects.Values)if(value is Pawn pawn)RegisterTaskPawn(pawn);
+            if(taskPawns.TryGetValue(id,out actor))return actor;
+            actor=Map?.mapPawns.AllPawnsSpawned.FirstOrDefault(p=>p.ThingID==id);
+            if(actor!=null)RegisterTaskPawn(actor);return actor;
         }
         bool TriggerEnabled(Rule rule)=>State.Phase=="Running"&&
             (State.Enabled.TryGetValue(rule.Id,out var enabled)?enabled:rule.Enabled)&&
@@ -61,18 +69,27 @@ namespace RimCampaign.Runtime
                 if(!rule.Events.Any(e=>e.Kind=="RangeEnter"||e.Kind=="RangeLeave"))continue;
                 if(!string.IsNullOrEmpty(rule.Host)&&(host==null||!host.Spawned||host.Map!=Map||host.Dead)){memory.Inside.Clear();continue;}
                 var center=host?.Position??new IntVec3(rule.Position.X,0,rule.Position.Z);
-                if(candidates==null)candidates=Map.mapPawns.AllPawnsSpawned.Where(p=>!p.Dead&&p.Faction==Faction.OfPlayer&&(p.RaceProps.Humanlike||p.RaceProps.IsMechanoid)).ToList();
+                if(candidates==null)candidates=Map.mapPawns.AllPawnsSpawned.Where(p=>!p.Dead).ToList();
                 var seen=new HashSet<string>();
                 foreach(var pawn in candidates) {
-                    if(pawn==host)continue;
+                    if(pawn==host||!TriggerMatches(rule,pawn))continue;
                     string id=pawn.ThingID;seen.Add(id);
-                    bool inside=pawn.Position.DistanceToSquared(center)<=rule.Radius*rule.Radius;
+                    bool inside=TriggerGeometry.Contains(rule,center.x,center.z,pawn.Position.x,pawn.Position.z);
                     bool was=memory.Inside.TryGetValue(id,out var old)&&old;
                     if(inside!=was)engine?.EmitForRule(rule.Id,inside?"RangeEnter":"RangeLeave",TriggerSource(pawn));
                     memory.Inside[id]=inside;
                 }
                 // Disappearance/death is not a movement out of the radius.
                 foreach(var id in memory.Inside.Keys.Where(id=>!seen.Contains(id)).ToList())memory.Inside.Remove(id);
+            }
+        }
+        bool TriggerMatches(Rule rule,Pawn pawn){
+            switch(rule.Detect){
+                case "AnyPawn":return true;
+                case "Hostile":return pawn.HostileTo(Faction.OfPlayer);
+                case "Friendly":return pawn.Faction==Faction.OfPlayer||pawn.Faction?.RelationKindWith(Faction.OfPlayer)==FactionRelationKind.Ally;
+                case "Specific":return ResolveTriggerPawn(rule.Subject)==pawn;
+                default:return pawn.Faction==Faction.OfPlayer&&(pawn.RaceProps.Humanlike||pawn.RaceProps.IsMechanoid);
             }
         }
         IEnumerable<IntVec3> TriggerCells(string target) {
@@ -89,7 +106,7 @@ namespace RimCampaign.Runtime
     static class TriggerPawnDamagePatch
     {
         static void Postfix(Pawn __instance,float totalDamageDealt) =>
-            Current.Game?.GetComponent<CampaignController>()?.RecordTriggerDamage(__instance,totalDamageDealt);
+            CampaignController.ForMap(__instance.MapHeld)?.RecordTriggerDamage(__instance,totalDamageDealt);
     }
     // Natural rock walls are normally compressed into a grid and lose their Thing IDs.
     // Script targets must remain referenceable after save/load.
@@ -97,7 +114,7 @@ namespace RimCampaign.Runtime
     static class TriggerObjectSavePatch
     {
         static void Postfix(Map ___map,HashSet<Thing> ___referencedThings) {
-            var controller=Current.Game?.GetComponent<CampaignController>();
+            var controller=CampaignController.ForMap(___map);
             if(controller==null||!controller.Active)return;
             foreach(var thing in controller.Objects.Values)
                 if(thing!=null&&thing.Spawned&&thing.Map==___map)___referencedThings.Add(thing);

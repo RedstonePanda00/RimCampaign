@@ -1,0 +1,697 @@
+<?xml version='1.0' encoding='utf-8'?>
+<LanguageData>
+  <RC_Text_ed24f14ebd6bf144>
+
+启用该子模组并重新加载游戏后，在新游戏剧本中选择战役。</RC_Text_ed24f14ebd6bf144>
+  <RC_Text_7ac8833e24f8ad47>
+
+行动用时：</RC_Text_7ac8833e24f8ad47>
+  <RC_Text_11b13e7e48e6fedb>
+
+随身物资
+</RC_Text_11b13e7e48e6fedb>
+  <RC_Text_ef8060ec9ae881b6>
+点击后选择执行角色；前往目标操作，耗时 </RC_Text_ef8060ec9ae881b6>
+  <RC_Text_f9804ccccb6dfa51>
+空间触发器（仅编辑器可选）</RC_Text_f9804ccccb6dfa51>
+  <RC_Text_dd975bd174942016>   死亡：</RC_Text_dd975bd174942016>
+  <RC_Text_a1995ce633a4a437>   汇报者：</RC_Text_a1995ce633a4a437>
+  <RC_Text_e926accca9db55e1>   非致命制伏：</RC_Text_e926accca9db55e1>
+  <RC_Text_557f33cbe2e97230>  [锁血]</RC_Text_557f33cbe2e97230>
+  <RC_Text_eb42aa856150a965>  ·  空白处左键拖框  ·  Shift 追加  ·  右键平移  ·  Ctrl+S 保存</RC_Text_eb42aa856150a965>
+  <RC_Text_896d96a7d8ab05be> / 100
+识破来源：</RC_Text_896d96a7d8ab05be>
+  <RC_Text_f61a636e1f201816> / 路点 </RC_Text_f61a636e1f201816>
+  <RC_Text_f1265b3551dee96d> · 初始内容物</RC_Text_f1265b3551dee96d>
+  <RC_Text_6cf4ecadd7ac5653> · 地图阵营</RC_Text_6cf4ecadd7ac5653>
+  <RC_Text_7abe0116b727e35f> · 选择 / 随机固定</RC_Text_7abe0116b727e35f>
+  <RC_Text_5692dc79263105e6> · 随机</RC_Text_5692dc79263105e6>
+  <RC_Text_2690d7c1c45030cd> 不支持材质：</RC_Text_2690d7c1c45030cd>
+  <RC_Text_3bf0697e43e0e048> 不支持预置内容物。</RC_Text_3bf0697e43e0e048>
+  <RC_Text_89be5537423b3b3f> 不能存放：</RC_Text_89be5537423b3b3f>
+  <RC_Text_44c243521ed6b4e5> 个对象</RC_Text_44c243521ed6b4e5>
+  <RC_Text_0ac48532fbab4e73> 个对象、区域或触发器会超出边界。请先移动或删除：
+</RC_Text_0ac48532fbab4e73>
+  <RC_Text_d2f248422709438d> 个对象；拖动移动，R 整组旋转，Shift+R 原地转向。</RC_Text_d2f248422709438d>
+  <RC_Text_92f376823467d2ba> 个路点（右键结束）。</RC_Text_92f376823467d2ba>
+  <RC_Text_9da972d159ba18b4> 个问题</RC_Text_9da972d159ba18b4>
+  <RC_Text_7610fc60ab844de2> 内容物超出容量：</RC_Text_7610fc60ab844de2>
+  <RC_Text_096d0a2d2cac9576> 名角色；路线不依赖宿主的位置。</RC_Text_096d0a2d2cac9576>
+  <RC_Text_fb44f910847af56c> 堆 / </RC_Text_fb44f910847af56c>
+  <RC_Text_6bcfa34a03ff3d66> 堆。</RC_Text_6bcfa34a03ff3d66>
+  <RC_Text_12381bc3beb51fe6> 无法容纳指定内容物，请检查容量和重叠布置。</RC_Text_12381bc3beb51fe6>
+  <RC_Text_e078aa0d87d659aa> 格；可一次撤销。</RC_Text_e078aa0d87d659aa>
+  <RC_Text_e9bd8882bbc6bf8a> 没有可用的生态地形表。</RC_Text_e9bd8882bbc6bf8a>
+  <RC_Text_c9160d87a78e2f4e> 的地形表未覆盖肥沃度 </RC_Text_c9160d87a78e2f4e>
+  <RC_Text_bf90fd0fb8bd820e> 的贴图款式已失效，请重新选择款式。</RC_Text_bf90fd0fb8bd820e>
+  <RC_Text_00fe8dda1fd70f64> 秒</RC_Text_00fe8dda1fd70f64>
+  <RC_Text_37a7d40c5c193725> 秒。</RC_Text_37a7d40c5c193725>
+  <RC_Text_bc776663c9aac789>) 朝向 </RC_Text_bc776663c9aac789>
+  <RC_Text_e7b00c7c36618f5b>+ Boss 模板</RC_Text_e7b00c7c36618f5b>
+  <RC_Text_5f1253d3247c3046>+ 关卡</RC_Text_5f1253d3247c3046>
+  <RC_Text_6dae45c6e31dfa1a>+ 添加 / Add</RC_Text_6dae45c6e31dfa1a>
+  <RC_Text_660d136f72f51b95>+ 添加物品</RC_Text_660d136f72f51b95>
+  <RC_Text_1774aa0bc1b8217a>+ 添加阵营</RC_Text_1774aa0bc1b8217a>
+  <RC_Text_e7adab2e2b775543>+ 连接</RC_Text_e7adab2e2b775543>
+  <RC_Text_6d0fe6c0c28e1376>C# 扩展…</RC_Text_6d0fe6c0c28e1376>
+  <RC_Text_5e74f13bb1bf3de2>C# 文件路径</RC_Text_5e74f13bb1bf3de2>
+  <RC_Text_bd54703e8d5cf093>Character Editor 未启用；原版档案可独立使用。</RC_Text_bd54703e8d5cf093>
+  <RC_Text_6d4ea235c04f2349>RimCampaign 创作</RC_Text_6d4ea235c04f2349>
+  <RC_Text_c8d5faa895201998>。请检查所需模组是否已启用。</RC_Text_c8d5faa895201998>
+  <RC_Text_fdc854cae7efb64e>一名守卫正赶往通讯设备，准备向外汇报入侵。
+
+镜头已定位到该守卫，并临时提供其周围的局部视野。请在汇报完成前制伏或击倒他，或切断对应的通讯设备。重新接战也会打断汇报。
+
+游戏已暂停，请部署拦截行动后继续。此次提示只出现一次。</RC_Text_fdc854cae7efb64e>
+  <RC_Text_4687f0397ffa3998>一次性</RC_Text_4687f0397ffa3998>
+  <RC_Text_51f1617280ea6243>不绑定角色（使用模板来源）</RC_Text_51f1617280ea6243>
+  <RC_Text_b654194679c493bb>中断当前设备操作或制伏。</RC_Text_b654194679c493bb>
+  <RC_Text_518b1e77363c2853>中立</RC_Text_518b1e77363c2853>
+  <RC_Text_2aedd4da603b481a>主生态</RC_Text_2aedd4da603b481a>
+  <RC_Text_8251178047c4c0a8>书名与正文只能用于书籍：</RC_Text_8251178047c4c0a8>
+  <RC_Text_89bcfac5b87c5a89>书籍文本（留空使用原版生成）</RC_Text_89bcfac5b87c5a89>
+  <RC_Text_c560201b331c5443>事件</RC_Text_c560201b331c5443>
+  <RC_Text_76671c2e70215aea>交互所需 tick</RC_Text_76671c2e70215aea>
+  <RC_Text_3b74258aef54a1a9>交互设备</RC_Text_3b74258aef54a1a9>
+  <RC_Text_a124e3a0b5fd96e1>仅演出预览；HUD 使用示例值 42</RC_Text_a124e3a0b5fd96e1>
+  <RC_Text_2a8ca45e635eae7f>从 CE 槽位导入</RC_Text_2a8ca45e635eae7f>
+  <RC_Text_e7fa48a7e4c1e28c>从 PawnKind 随机生成</RC_Text_e7fa48a7e4c1e28c>
+  <RC_Text_f617beed33b04991>任务目标</RC_Text_f617beed33b04991>
+  <RC_Text_b57b6722d6b013b3>位于未警觉守卫背后，周围相邻八格及四向直线第二格均可发动，不受自身朝向限制；不能隔墙。</RC_Text_b57b6722d6b013b3>
+  <RC_Text_89e89303747474c3>位置 X / Z</RC_Text_89e89303747474c3>
+  <RC_Text_6bcef539a8532234>使用 Character Editor 编辑</RC_Text_6bcef539a8532234>
+  <RC_Text_1b22d316260c09a7>使用导入的原生能力</RC_Text_1b22d316260c09a7>
+  <RC_Text_1664dea353db5198>使用载体武器／近战</RC_Text_1664dea353db5198>
+  <RC_Text_154ffcebef797c0f>依赖报告</RC_Text_154ffcebef797c0f>
+  <RC_Text_a3030bf8f16dc63c>保存</RC_Text_a3030bf8f16dc63c>
+  <RC_Text_ca9272eac537fd9c>保存为组合…</RC_Text_ca9272eac537fd9c>
+  <RC_Text_9a121578b3bf62f7>保存并阅读档案：Target 编号，Name 标题，Text 正文</RC_Text_9a121578b3bf62f7>
+  <RC_Text_0963fe0031c2c186>保存档案列表</RC_Text_0963fe0031c2c186>
+  <RC_Text_5ea11db9fc7fc4dc>保存进度</RC_Text_5ea11db9fc7fc4dc>
+  <RC_Text_c9514582419c5881>保存项目 JSON</RC_Text_c9514582419c5881>
+  <RC_Text_e7028601e7da793d>信息</RC_Text_e7028601e7da793d>
+  <RC_Text_5a1deef1364497f7>停留（tick）</RC_Text_5a1deef1364497f7>
+  <RC_Text_13ccd2c8ee353744>允许自动近战</RC_Text_13ccd2c8ee353744>
+  <RC_Text_7a1216d2a1e18694>允许隔墙听到闲谈</RC_Text_7a1216d2a1e18694>
+  <RC_Text_083d0f3345433510>先在地图选择一个或多个巡逻角色，再绑定路线。</RC_Text_083d0f3345433510>
+  <RC_Text_fc40830728074103>先绘制路线，稍后绑定角色。路点可拖动、Shift 多选／框选、整组移动与撤销。</RC_Text_fc40830728074103>
+  <RC_Text_81b6259191f700a2>入场演出与通讯</RC_Text_81b6259191f700a2>
+  <RC_Text_23e60cb4f527fc24>全图</RC_Text_23e60cb4f527fc24>
+  <RC_Text_c2b4a8fb91ee6610>全部对象</RC_Text_c2b4a8fb91ee6610>
+  <RC_Text_d58387947d9eee71>全部模组</RC_Text_d58387947d9eee71>
+  <RC_Text_db33cee555de66a4>公共动作组</RC_Text_db33cee555de66a4>
+  <RC_Text_3e0d5d884ae0bc50>关卡 </RC_Text_3e0d5d884ae0bc50>
+  <RC_Text_17bdc250b09f4a07>关闭 / Close</RC_Text_17bdc250b09f4a07>
+  <RC_Text_687ef33ef158eee1>关闭时不会主动殴打身边的敌人。手动近战命令与背后制伏仍然可用。</RC_Text_687ef33ef158eee1>
+  <RC_Text_e4eb5f28cae8dd85>切断对外通讯</RC_Text_e4eb5f28cae8dd85>
+  <RC_Text_0348f7f9949c1833>创建巡逻路线并在地图点选路点</RC_Text_0348f7f9949c1833>
+  <RC_Text_78780e17168a2d71>创建战役</RC_Text_78780e17168a2d71>
+  <RC_Text_2f9daa828907b93f>删除</RC_Text_2f9daa828907b93f>
+  <RC_Text_67ffba2de42a1d4f>删除  Delete</RC_Text_67ffba2de42a1d4f>
+  <RC_Text_0552e329ccf875fb>删除…</RC_Text_0552e329ccf875fb>
+  <RC_Text_ce5c624f5cc5e508>删除所选对象？引用将需要重新绑定。
+</RC_Text_ce5c624f5cc5e508>
+  <RC_Text_42e00ae34efde29f>删除档案并重新绑定这些节点：
+</RC_Text_42e00ae34efde29f>
+  <RC_Text_204a82af75b3c192>制伏所需 tick</RC_Text_204a82af75b3c192>
+  <RC_Text_ae9c2e9dfe6606ef>剧情</RC_Text_ae9c2e9dfe6606ef>
+  <RC_Text_4eafeea019198c90>副生态</RC_Text_4eafeea019198c90>
+  <RC_Text_c751321e5041ad14>副生态占比 </RC_Text_c751321e5041ad14>
+  <RC_Text_39de17252b1dc386>动态视野遮蔽</RC_Text_39de17252b1dc386>
+  <RC_Text_353d21c681e69c2b>勾选声音接收目标；未勾选任何目标时，由类型、分组和阵营筛选。
+仍需位于有效声音范围内。</RC_Text_353d21c681e69c2b>
+  <RC_Text_8c7e3447ec67023e>区分大小写</RC_Text_8c7e3447ec67023e>
+  <RC_Text_3382870bc4ada94e>区域</RC_Text_3382870bc4ada94e>
+  <RC_Text_b5977148919fabf7>区域与标记 / 区域</RC_Text_b5977148919fabf7>
+  <RC_Text_52a150699009c7dc>区域与标记 / 标记</RC_Text_52a150699009c7dc>
+  <RC_Text_94a8b4d7dbdd81dc>区域与标记 / 触发器</RC_Text_94a8b4d7dbdd81dc>
+  <RC_Text_af8c4c7087fe8695>危险声响</RC_Text_af8c4c7087fe8695>
+  <RC_Text_bbe239eac6712b57>原地转向  Shift+R</RC_Text_bbe239eac6712b57>
+  <RC_Text_a820e9499f235ec8>原版创建角色</RC_Text_a820e9499f235ec8>
+  <RC_Text_8a2b354707b6d93a>原版生成书籍文本</RC_Text_8a2b354707b6d93a>
+  <RC_Text_563947542629d422>发现 </RC_Text_563947542629d422>
+  <RC_Text_82341be82c08eaab>取得后必须随队携带</RC_Text_82341be82c08eaab>
+  <RC_Text_2cd0f3be8738a86c>取消</RC_Text_2cd0f3be8738a86c>
+  <RC_Text_dc9901c32b3462a7>取消交互</RC_Text_dc9901c32b3462a7>
+  <RC_Text_6c6a68124418ead0>取消并返回</RC_Text_6c6a68124418ead0>
+  <RC_Text_06babdce20b534b4>取消建筑操作</RC_Text_06babdce20b534b4>
+  <RC_Text_1232eb44296bb8cf>另存为</RC_Text_1232eb44296bb8cf>
+  <RC_Text_9016c463977d0128>另存为…</RC_Text_9016c463977d0128>
+  <RC_Text_5adc58e04910c968>可操作</RC_Text_5adc58e04910c968>
+  <RC_Text_56a1b73357cdafd4>同一地图对应多个战役节点，请先明确唯一测试节点。</RC_Text_56a1b73357cdafd4>
+  <RC_Text_d44e9b3d3b31d37b>名称</RC_Text_d44e9b3d3b31d37b>
+  <RC_Text_1e4b84edadce00b2>听声辨位（视野半径内隔墙显示敌人）</RC_Text_1e4b84edadce00b2>
+  <RC_Text_53d5d42eb531acc3>听觉距离倍率</RC_Text_53d5d42eb531acc3>
+  <RC_Text_f4f0ead1116b5b62>启用</RC_Text_f4f0ead1116b5b62>
+  <RC_Text_b223612f54ff79e0>启用 ✓</RC_Text_b223612f54ff79e0>
+  <RC_Text_b82061c1d395d38a>启用背后制伏</RC_Text_b82061c1d395d38a>
+  <RC_Text_0da8b54b7e8eec05>回到主界面 / Main menu</RC_Text_0da8b54b7e8eec05>
+  <RC_Text_a7248945a2337afc>固定贴图款式</RC_Text_a7248945a2337afc>
+  <RC_Text_f2926eb3bb7c6252>图层</RC_Text_f2926eb3bb7c6252>
+  <RC_Text_81639a8a9bce63fa>圆形</RC_Text_81639a8a9bce63fa>
+  <RC_Text_c1e69f1943cff9c6>在世界地图选择殖民地位置 / Select a world tile</RC_Text_c1e69f1943cff9c6>
+  <RC_Text_06e327112e020150>在所选地块定居 / Settle</RC_Text_06e327112e020150>
+  <RC_Text_41ab2e0ecbec6674>地图</RC_Text_41ab2e0ecbec6674>
+  <RC_Text_d46e09fa2e06e656>地图 </RC_Text_d46e09fa2e06e656>
+  <RC_Text_cff6924b5ff813dd>地图 1</RC_Text_cff6924b5ff813dd>
+  <RC_Text_f216cfd723ac150a>地图基本参数</RC_Text_f216cfd723ac150a>
+  <RC_Text_7ca9c4a1d1f41d86>地图尺寸  </RC_Text_7ca9c4a1d1f41d86>
+  <RC_Text_f58e59dd7500090f>地图尺寸已改为 </RC_Text_f58e59dd7500090f>
+  <RC_Text_f1fb6b0953bd4971>地图尺寸（格）</RC_Text_f1fb6b0953bd4971>
+  <RC_Text_cea2d0e1cb150086>地图开始</RC_Text_cea2d0e1cb150086>
+  <RC_Text_78e74f364de29402>地图生成奖励（</RC_Text_78e74f364de29402>
+  <RC_Text_63cd48ba96292198>地图生成奖励（仅生成一次）</RC_Text_63cd48ba96292198>
+  <RC_Text_6ca8c4b9e3a2c2f9>地图组件必须是实现 ICampaignMapModule 的 CustomMapComponent，且具有 Map 构造函数：</RC_Text_6ca8c4b9e3a2c2f9>
+  <RC_Text_92e876ea97e999cc>地图设置</RC_Text_92e876ea97e999cc>
+  <RC_Text_d1931ee4f5046d53>地形与生态初始化…</RC_Text_d1931ee4f5046d53>
+  <RC_Text_1e088b8982191f05>地形初始化</RC_Text_1e088b8982191f05>
+  <RC_Text_e21981605b153904>地形斑块尺寸 </RC_Text_e21981605b153904>
+  <RC_Text_bfeff1c719101c4c>地形模式：隐藏上层地板，编辑底层地形。</RC_Text_bfeff1c719101c4c>
+  <RC_Text_a534e26854649b44>地板模式：只编辑上层地板，保留底层地形。</RC_Text_a534e26854649b44>
+  <RC_Text_119232141df50f19>地表 / 地形</RC_Text_119232141df50f19>
+  <RC_Text_523a47f635ac76c6>地表 / 地板</RC_Text_523a47f635ac76c6>
+  <RC_Text_1fc524e945d4eeb3>地表 / 屋顶</RC_Text_1fc524e945d4eeb3>
+  <RC_Text_38fc9ad1c5c5fd28>地表室外温度 </RC_Text_38fc9ad1c5c5fd28>
+  <RC_Text_7f72f06a88779b5a>场景</RC_Text_7f72f06a88779b5a>
+  <RC_Text_89e5e14c8db996da>基础</RC_Text_89e5e14c8db996da>
+  <RC_Text_60e51eb94b47ad07>声音范围触发配置</RC_Text_60e51eb94b47ad07>
+  <RC_Text_63d90d977348ab1f>复制</RC_Text_63d90d977348ab1f>
+  <RC_Text_e33666967bdbddb0>复制  Ctrl+C</RC_Text_e33666967bdbddb0>
+  <RC_Text_14bb0b029615e455>外传剩余：</RC_Text_14bb0b029615e455>
+  <RC_Text_55ea56531ac9a976>太空使用独立地图环境，不能与地表生态混合。</RC_Text_55ea56531ac9a976>
+  <RC_Text_082372acf3a5f856>太空和混合生态需要启用 Odyssey。</RC_Text_082372acf3a5f856>
+  <RC_Text_fda8f5036410009b>失败演出</RC_Text_fda8f5036410009b>
+  <RC_Text_5b4af03f393622b7>头像尺寸</RC_Text_5b4af03f393622b7>
+  <RC_Text_ed33dcd2e15e96d1>头像所属 packageId</RC_Text_ed33dcd2e15e96d1>
+  <RC_Text_d710ff44fde15f34>头像预设</RC_Text_d710ff44fde15f34>
+  <RC_Text_71f9073cfa2e1357>奖励接收角色（空为事件操作者）</RC_Text_71f9073cfa2e1357>
+  <RC_Text_b23eb8f2df3fffe7>守卫同时响应声源</RC_Text_b23eb8f2df3fffe7>
+  <RC_Text_72cba74cdf2efea7>守卫控制器</RC_Text_72cba74cdf2efea7>
+  <RC_Text_49726f09c8123a40>定位</RC_Text_49726f09c8123a40>
+  <RC_Text_22b9a5ba97ae1dad>实心圆 / 椭圆</RC_Text_22b9a5ba97ae1dad>
+  <RC_Text_678e5d44009d9cbb>容器内容物在地图选中容器后编辑。奖励仅在生成阶段创建，领取由剧情动作转移已有实例。</RC_Text_678e5d44009d9cbb>
+  <RC_Text_86ce4132ac35fcc6>宽 X</RC_Text_86ce4132ac35fcc6>
+  <RC_Text_b0b8cd759ee0f15b>宽和高都必须是 20–500 之间的整数。</RC_Text_b0b8cd759ee0f15b>
+  <RC_Text_d8456739a2ed3668>宿主</RC_Text_d8456739a2ed3668>
+  <RC_Text_a78fe00364235779>宿主不存在：</RC_Text_a78fe00364235779>
+  <RC_Text_58b059d3578a1431>宿主倒地</RC_Text_58b059d3578a1431>
+  <RC_Text_0118e48302237123>宿主死亡</RC_Text_0118e48302237123>
+  <RC_Text_4b0902c9ccc5d353>密码触发器</RC_Text_4b0902c9ccc5d353>
+  <RC_Text_90400c7945109d11>对外通讯设备</RC_Text_90400c7945109d11>
+  <RC_Text_fbe1dceb56c8cabb>导入 Character Editor 槽位</RC_Text_fbe1dceb56c8cabb>
+  <RC_Text_cf19a4db097303c4>导入组合…</RC_Text_cf19a4db097303c4>
+  <RC_Text_643e7408e6a75d97>导出…</RC_Text_643e7408e6a75d97>
+  <RC_Text_256e0e01353cd8b3>导出校验失败</RC_Text_256e0e01353cd8b3>
+  <RC_Text_6d4d219a7b6c7f07>导出父目录</RC_Text_6d4d219a7b6c7f07>
+  <RC_Text_48c10eec1b2c5f05>小地图  </RC_Text_48c10eec1b2c5f05>
+  <RC_Text_cbe84b1393d9404e>尚未满足操作条件。</RC_Text_cbe84b1393d9404e>
+  <RC_Text_1dbd617899cec53c>尚未配置密码触发器。</RC_Text_1dbd617899cec53c>
+  <RC_Text_0d23ad87ba121a93>局部通报频道</RC_Text_0d23ad87ba121a93>
+  <RC_Text_4cc3885c182e419c>居中</RC_Text_4cc3885c182e419c>
+  <RC_Text_c321b59a938f1d0d>展开属性面板</RC_Text_c321b59a938f1d0d>
+  <RC_Text_00221b24a5e9725e>展开左侧面板</RC_Text_00221b24a5e9725e>
+  <RC_Text_749cdb746a537fcd>山体强度 </RC_Text_749cdb746a537fcd>
+  <RC_Text_cc58592a77df9ac7>巡逻路点</RC_Text_cc58592a77df9ac7>
+  <RC_Text_ad654b900a612578>巡逻路线</RC_Text_ad654b900a612578>
+  <RC_Text_c2e69b675c2eb5a6>已保存 </RC_Text_c2e69b675c2eb5a6>
+  <RC_Text_a8c3698b5b8c485d>已停用</RC_Text_a8c3698b5b8c485d>
+  <RC_Text_79c51f1aea08a31e>已原地旋转 </RC_Text_79c51f1aea08a31e>
+  <RC_Text_ba85459e7dea3cd5>已取得</RC_Text_ba85459e7dea3cd5>
+  <RC_Text_40bd780af0eae74f>已围绕最后选中的格子旋转 </RC_Text_40bd780af0eae74f>
+  <RC_Text_b4fd6c8284948edc>已复制 </RC_Text_b4fd6c8284948edc>
+  <RC_Text_f28461bb49c85647>已完成</RC_Text_f28461bb49c85647>
+  <RC_Text_32b2b42cabb6ef18>已导出 </RC_Text_32b2b42cabb6ef18>
+  <RC_Text_9b2b6380fbc518a6>已应用 </RC_Text_9b2b6380fbc518a6>
+  <RC_Text_a10f2b1d5d6450ae>已应用属性；可撤销。</RC_Text_a10f2b1d5d6450ae>
+  <RC_Text_81d92e66bfb3dcb3>已控制</RC_Text_81d92e66bfb3dcb3>
+  <RC_Text_2937a5ea12502a9a>已绑定 </RC_Text_2937a5ea12502a9a>
+  <RC_Text_8619493b389d053b>已选中 </RC_Text_8619493b389d053b>
+  <RC_Text_426e458a41246bd5>已领取</RC_Text_426e458a41246bd5>
+  <RC_Text_f2d7e92b4d4ff6af>常规战斗巡逻</RC_Text_f2d7e92b4d4ff6af>
+  <RC_Text_6bb2cbb8af9746d0>应用内容物</RC_Text_6bb2cbb8af9746d0>
+  <RC_Text_2ec9dd05c1df8f37>应用尺寸</RC_Text_2ec9dd05c1df8f37>
+  <RC_Text_305b668379e37031>应用并返回</RC_Text_305b668379e37031>
+  <RC_Text_9f1831af31ebdfe1>应用阵营配置</RC_Text_9f1831af31ebdfe1>
+  <RC_Text_f257d0d970fde0b2>建筑与物品</RC_Text_f257d0d970fde0b2>
+  <RC_Text_3a9128f59a49aa62>开局生成</RC_Text_3a9128f59a49aa62>
+  <RC_Text_78fb453cd62fc14d>开局由玩家控制</RC_Text_78fb453cd62fc14d>
+  <RC_Text_b257b7f5a83992f5>当前地图尚未连接到战役关卡。</RC_Text_b257b7f5a83992f5>
+  <RC_Text_57fb4c7cc0e87c44>当前无法收队。</RC_Text_57fb4c7cc0e87c44>
+  <RC_Text_b3771b21231a53b4>当前笔刷：</RC_Text_b3771b21231a53b4>
+  <RC_Text_59d51f0453fe47bc>当前路点类型：</RC_Text_59d51f0453fe47bc>
+  <RC_Text_2403fd3777f12812>形状 ▾</RC_Text_2403fd3777f12812>
+  <RC_Text_102f4c65bad767c1>往返巡逻</RC_Text_102f4c65bad767c1>
+  <RC_Text_6d1fa76d8bd40c82>忽略输入首尾空白</RC_Text_6d1fa76d8bd40c82>
+  <RC_Text_49f332b5735c7ef8>恢复默认地形</RC_Text_49f332b5735c7ef8>
+  <RC_Text_fa4f1cfbdf5ba5ab>恢复默认地形（保留地板）</RC_Text_fa4f1cfbdf5ba5ab>
+  <RC_Text_79b4e45bed41bf86>感知刷新（tick）</RC_Text_79b4e45bed41bf86>
+  <RC_Text_7ae0219da3aead45>战役</RC_Text_7ae0219da3aead45>
+  <RC_Text_5200d4502465b241>战役包已生成：
+</RC_Text_5200d4502465b241>
+  <RC_Text_ba68b315d1233ab8>战役完成 / Campaign complete</RC_Text_ba68b315d1233ab8>
+  <RC_Text_690e930af9e601be>战役设置</RC_Text_690e930af9e601be>
+  <RC_Text_a0a64e13d81324c6>战败 / Defeat</RC_Text_a0a64e13d81324c6>
+  <RC_Text_3aee6ac1b4f5e1ca>所有角色</RC_Text_3aee6ac1b4f5e1ca>
+  <RC_Text_70273e0f06f76e55>所选角色无法抵达或预约该目标。</RC_Text_70273e0f06f76e55>
+  <RC_Text_04e0029fa80e9a97>打开补给箱</RC_Text_04e0029fa80e9a97>
+  <RC_Text_46259b061354814d>打开项目…</RC_Text_46259b061354814d>
+  <RC_Text_45f83590f4b8fc28>执行动作</RC_Text_45f83590f4b8fc28>
+  <RC_Text_4476e79244935213>找不到物品定义：</RC_Text_4476e79244935213>
+  <RC_Text_948fb9c03544d9d7>把路线绑定到所选角色（可多选）</RC_Text_948fb9c03544d9d7>
+  <RC_Text_fbbe5bc34412b344>持久（可重复）</RC_Text_fbbe5bc34412b344>
+  <RC_Text_97abac7105440690>挂载的地图组件</RC_Text_97abac7105440690>
+  <RC_Text_0eac53b3cfbb5076>指定字符（密码）</RC_Text_0eac53b3cfbb5076>
+  <RC_Text_212af319a7a4390d>指定接收目标（</RC_Text_212af319a7a4390d>
+  <RC_Text_87fedc23a146d752>指定检测角色</RC_Text_87fedc23a146d752>
+  <RC_Text_237ee2bfd4076bf6>指定角色</RC_Text_237ee2bfd4076bf6>
+  <RC_Text_8c18d5092e5ff833>接收对象类型</RC_Text_8c18d5092e5ff833>
+  <RC_Text_84d9df213e5e2539>接管摄像头</RC_Text_84d9df213e5e2539>
+  <RC_Text_90500043ef15b163>接近目标</RC_Text_90500043ef15b163>
+  <RC_Text_962437a7dbcde89d>控制广播</RC_Text_962437a7dbcde89d>
+  <RC_Text_4c7dde4ef0b24e45>控制的 Pawn</RC_Text_4c7dde4ef0b24e45>
+  <RC_Text_d5be322c6875b4b8>提交 / Submit</RC_Text_d5be322c6875b4b8>
+  <RC_Text_8df4dc5f6ae6d101>搜索半径</RC_Text_8df4dc5f6ae6d101>
+  <RC_Text_2d449bb159202111>搜索持续 tick</RC_Text_2d449bb159202111>
+  <RC_Text_4eb85270d54046da>摄像头已接管。</RC_Text_4eb85270d54046da>
+  <RC_Text_867f60891845b47f>摄像头自动对外传输</RC_Text_867f60891845b47f>
+  <RC_Text_81cd950ab083ef3d>撤销  Ctrl+Z</RC_Text_81cd950ab083ef3d>
+  <RC_Text_8061c93666ae0361>播放入场演出</RC_Text_8061c93666ae0361>
+  <RC_Text_05b85719205485b9>播放失败演出</RC_Text_05b85719205485b9>
+  <RC_Text_0057e52b397bf972>播放广播</RC_Text_0057e52b397bf972>
+  <RC_Text_ed31fbb483ee1b0a>操作</RC_Text_ed31fbb483ee1b0a>
+  <RC_Text_c426e0d7fe0523aa>擦除地板</RC_Text_c426e0d7fe0523aa>
+  <RC_Text_bf3bb14977346c48>擦除地板 → 露出底层地形</RC_Text_bf3bb14977346c48>
+  <RC_Text_b70174e1307ea80f>擦除屋顶</RC_Text_b70174e1307ea80f>
+  <RC_Text_589c4741f8b4904a>擦除屋顶（含厚岩顶）</RC_Text_589c4741f8b4904a>
+  <RC_Text_a394d07e0395825e>收到信号</RC_Text_a394d07e0395825e>
+  <RC_Text_4e196746c09f4a1c>收取随身物资</RC_Text_4e196746c09f4a1c>
+  <RC_Text_f38c502bb212d31c>收起属性面板</RC_Text_f38c502bb212d31c>
+  <RC_Text_b63713f5f4dc459c>收起左侧面板</RC_Text_b63713f5f4dc459c>
+  <RC_Text_c503005132f1bae2>放置 </RC_Text_c503005132f1bae2>
+  <RC_Text_e667a64143fba41d>放置 · </RC_Text_e667a64143fba41d>
+  <RC_Text_40a2cbbccefbaab3>敌人</RC_Text_40a2cbbccefbaab3>
+  <RC_Text_59ffaf63fab8bace>敌对角色</RC_Text_59ffaf63fab8bace>
+  <RC_Text_5e29d121dda011c5>数量</RC_Text_5e29d121dda011c5>
+  <RC_Text_61cb7af12f28754d>数量必须为整数。</RC_Text_61cb7af12f28754d>
+  <RC_Text_aff5b5b76435fc46>整组旋转  R</RC_Text_aff5b5b76435fc46>
+  <RC_Text_39932f24fe11a6ba>文件</RC_Text_39932f24fe11a6ba>
+  <RC_Text_3c0f33b85ccac553>文字通讯使用模拟频谱</RC_Text_3c0f33b85ccac553>
+  <RC_Text_c40fccbe727e4bd8>新 Boss</RC_Text_c40fccbe727e4bd8>
+  <RC_Text_0e1a7040390fb03e>新建项目</RC_Text_0e1a7040390fb03e>
+  <RC_Text_765f3b8d2f3a80d4>新战役</RC_Text_765f3b8d2f3a80d4>
+  <RC_Text_3cecc651752f2e03>新目标</RC_Text_3cecc651752f2e03>
+  <RC_Text_e716018ff2fd34ad>旋转后会超出地图边界；整组保持原位。</RC_Text_e716018ff2fd34ad>
+  <RC_Text_484d55613910eb8c>无</RC_Text_484d55613910eb8c>
+  <RC_Text_d09150bc730cd4dc>无宿主</RC_Text_d09150bc730cd4dc>
+  <RC_Text_0ac660c56ccd94da>无法完整转换：
+</RC_Text_0ac660c56ccd94da>
+  <RC_Text_9b2079a2a2501989>无法抵达。</RC_Text_9b2079a2a2501989>
+  <RC_Text_a571c35cd9bdd9fc>无法预约。</RC_Text_a571c35cd9bdd9fc>
+  <RC_Text_07efab852f8e8874>无阵营（旧版）</RC_Text_07efab852f8e8874>
+  <RC_Text_810d71e774edda24>无需材质</RC_Text_810d71e774edda24>
+  <RC_Text_d9bb9847ebf7c788>旧布置已清空，地形、植被与山体已初始化。可撤销恢复。</RC_Text_d9bb9847ebf7c788>
+  <RC_Text_8d8aa6cbc22da6ce>昏迷</RC_Text_8d8aa6cbc22da6ce>
+  <RC_Text_4d48aa374a692aa2>显示 ▾</RC_Text_4d48aa374a692aa2>
+  <RC_Text_6ce617f9d0de98e9>显示名称（可覆盖角色名）</RC_Text_6ce617f9d0de98e9>
+  <RC_Text_d38ef8d72dd81bf7>显示屋顶</RC_Text_d38ef8d72dd81bf7>
+  <RC_Text_cfeb2dc5ab23ddf1>显示辅助标记与范围</RC_Text_cfeb2dc5ab23ddf1>
+  <RC_Text_50c5d9d56e68fce8>普通巡逻路线</RC_Text_50c5d9d56e68fce8>
+  <RC_Text_99d017bc7acb2358>普通战斗巡逻绑定</RC_Text_99d017bc7acb2358>
+  <RC_Text_5a1eab977a61e550>暂停预览</RC_Text_5a1eab977a61e550>
+  <RC_Text_6073eaab817dfc84>替换类型请先移除再添加。</RC_Text_6073eaab817dfc84>
+  <RC_Text_15287d9a6660f16c>最远距离辨认速度倍率</RC_Text_15287d9a6660f16c>
+  <RC_Text_a6815db95ff5ad9f>有 </RC_Text_a6815db95ff5ad9f>
+  <RC_Text_5141f7a246a391c1>有序列表 / Ordered list</RC_Text_5141f7a246a391c1>
+  <RC_Text_0b999d242e759339>有序路点</RC_Text_0b999d242e759339>
+  <RC_Text_0764c56d46891ea6>朝向 0北1东2南3西</RC_Text_0764c56d46891ea6>
+  <RC_Text_e7954a2f3acea1ee>未取得</RC_Text_e7954a2f3acea1ee>
+  <RC_Text_6707de42c29ddf4e>未完成</RC_Text_6707de42c29ddf4e>
+  <RC_Text_67d471bceebbd3ef>未选择物品</RC_Text_67d471bceebbd3ef>
+  <RC_Text_fb46848763cb4f20>本图未挂载任何组件。按需添加，潜行不会自动绑定。</RC_Text_fb46848763cb4f20>
+  <RC_Text_90a62cda92d2fbba>本图组件（默认不挂载）。启用状态与是否挂载分别配置。</RC_Text_90a62cda92d2fbba>
+  <RC_Text_7af0a9aef59e883e>本次操作已完成。</RC_Text_7af0a9aef59e883e>
+  <RC_Text_58835cfcd8585455>本次触发源</RC_Text_58835cfcd8585455>
+  <RC_Text_16bb1d2b098c2b2f>条件</RC_Text_16bb1d2b098c2b2f>
+  <RC_Text_9061dfa8d6d3c414>枪声半径</RC_Text_9061dfa8d6d3c414>
+  <RC_Text_5c204b8129b6308a>校验与依赖</RC_Text_5c204b8129b6308a>
+  <RC_Text_3051a776eaa52624>校验通过</RC_Text_3051a776eaa52624>
+  <RC_Text_ebca60632a4ba667>检查点（停留）</RC_Text_ebca60632a4ba667>
+  <RC_Text_cb1993d59c0cdcea>检查点（关闭则经过不停留）</RC_Text_cb1993d59c0cdcea>
+  <RC_Text_96abafb7eea1073a>检查点，停留 </RC_Text_96abafb7eea1073a>
+  <RC_Text_4d664143c9ae411a>检测对象</RC_Text_4d664143c9ae411a>
+  <RC_Text_2bea2d59e3c9c574>检测范围形状</RC_Text_2bea2d59e3c9c574>
+  <RC_Text_9158fcd843c78bee>植被密度 </RC_Text_9158fcd843c78bee>
+  <RC_Text_b5c0b1c85f8c7705>款式 #</RC_Text_b5c0b1c85f8c7705>
+  <RC_Text_00ce90f5cdb870af>此对象无需材质</RC_Text_00ce90f5cdb870af>
+  <RC_Text_341827052461fa39>此对象没有可编辑的储物空间</RC_Text_341827052461fa39>
+  <RC_Text_f3c36df1d9de8372>此对象没有可选随机款式</RC_Text_f3c36df1d9de8372>
+  <RC_Text_d1b50778520b918c>此对象没有可选随机款式。</RC_Text_d1b50778520b918c>
+  <RC_Text_be9f2495536eeaed>每次放置随机选定并固定</RC_Text_be9f2495536eeaed>
+  <RC_Text_677f7e36d5a72db6>没有可执行操作的己方角色。</RC_Text_677f7e36d5a72db6>
+  <RC_Text_4d914abddeb66328>泄密报告所需 tick</RC_Text_4d914abddeb66328>
+  <RC_Text_8af4c9c36a2a3c17>混合生态（需要 Odyssey，按格保存生态边界）</RC_Text_8af4c9c36a2a3c17>
+  <RC_Text_7a8a11ead50742a2>添加</RC_Text_7a8a11ead50742a2>
+  <RC_Text_e0d7703af1c1f095>添加地图组件…</RC_Text_e0d7703af1c1f095>
+  <RC_Text_0e6ccd6a813fb6e7>清空布置并初始化（可撤销）</RC_Text_0e6ccd6a813fb6e7>
+  <RC_Text_4562409fc98138dc>清空当前地图的建筑、物品、角色、区域、巡逻和事件布置。
+重新生成地表、原生植被与带天然屋顶的岩石山体；整个操作可撤销。
+相同种子可重现。太空仍为空白真空，需自行建平台和密封建筑。</RC_Text_4562409fc98138dc>
+  <RC_Text_7acd740014a03278>渲染器参数</RC_Text_7acd740014a03278>
+  <RC_Text_8d334a341aa306f3>渲染模块 packageId</RC_Text_8d334a341aa306f3>
+  <RC_Text_6b573a477fa79e08>游戏内 HUD</RC_Text_6b573a477fa79e08>
+  <RC_Text_6d3d1ae9c5a4eb65>满怀疑度保持 tick</RC_Text_6d3d1ae9c5a4eb65>
+  <RC_Text_842479a9f3123bb8>演出与通讯</RC_Text_842479a9f3123bb8>
+  <RC_Text_6da1499a06e33eed>潜行</RC_Text_6da1499a06e33eed>
+  <RC_Text_1c3b7ea11f291d8e>潜行系统</RC_Text_1c3b7ea11f291d8e>
+  <RC_Text_8ed83d17cfd1f7ca>潜行表现：</RC_Text_8ed83d17cfd1f7ca>
+  <RC_Text_eac3d332c8ba7923>潜行设置：巡逻、感知、设备</RC_Text_eac3d332c8ba7923>
+  <RC_Text_51507804d3317d7d>热测试</RC_Text_51507804d3317d7d>
+  <RC_Text_428b5d526bce07c0>热测试中的实时组件：添加／移除会立即执行生命周期回调；不会改写创作工程。</RC_Text_428b5d526bce07c0>
+  <RC_Text_73494dc9ef9dffc9>热测试已自动保存。退出到主菜单后返回原地图编辑器。</RC_Text_73494dc9ef9dffc9>
+  <RC_Text_5c5faacdfbbdb38b>热测试：地图组件…</RC_Text_5c5faacdfbbdb38b>
+  <RC_Text_d18498e633016824>物品数量必须为 1–10000。</RC_Text_d18498e633016824>
+  <RC_Text_bb66887d2c73991e>玩家与盟友</RC_Text_bb66887d2c73991e>
+  <RC_Text_358f207d5ba177f1>玩家与盟友同队，所有敌人同队，两队互相敌对。
+中立阵营各自独立，与所有其他阵营默认中立。</RC_Text_358f207d5ba177f1>
+  <RC_Text_b993ae387bb770ed>玩家人形与机械体</RC_Text_b993ae387bb770ed>
+  <RC_Text_8c2a898fff8df2e9>玩家视野（格）</RC_Text_8c2a898fff8df2e9>
+  <RC_Text_7232725d2689a6dc>玩家贴角探视（一格）</RC_Text_7232725d2689a6dc>
+  <RC_Text_0b52c946fd58192d>玩家（盟友队）</RC_Text_0b52c946fd58192d>
+  <RC_Text_5fa5ad7e01c5beaa>生态初始化仅适用于战役独立地图。</RC_Text_5fa5ad7e01c5beaa>
+  <RC_Text_633cf0999e108c56>生成与奖励</RC_Text_633cf0999e108c56>
+  <RC_Text_0e1e4515d8e508ae>生成种子</RC_Text_0e1e4515d8e508ae>
+  <RC_Text_99038aee89284b04>白框表示当前视窗；点击定位，拖动白框移动视角。
+绿色：友方；红色：敌方；黄色：中立或辅助对象。</RC_Text_99038aee89284b04>
+  <RC_Text_97d1c3a3f41beff5>盟友</RC_Text_97d1c3a3f41beff5>
+  <RC_Text_151fbbdf35ac11d8>目标列表</RC_Text_151fbbdf35ac11d8>
+  <RC_Text_88b75a101595a23a>矩形</RC_Text_88b75a101595a23a>
+  <RC_Text_cbe6a04cd3dd15f6>矩形宽度（格）</RC_Text_cbe6a04cd3dd15f6>
+  <RC_Text_0cf8dcfcb06af220>矩形高度（格）</RC_Text_0cf8dcfcb06af220>
+  <RC_Text_36f33adaf0942634>确认</RC_Text_36f33adaf0942634>
+  <RC_Text_57a245198cc05ed2>确认保存角色档案</RC_Text_57a245198cc05ed2>
+  <RC_Text_e90fe23778050856>离开检测范围</RC_Text_e90fe23778050856>
+  <RC_Text_6135d4159e892541>移除</RC_Text_6135d4159e892541>
+  <RC_Text_e1a51d909de5d8c7>空心圆 / 椭圆</RC_Text_e1a51d909de5d8c7>
+  <RC_Text_478dbd35dd35cbc6>空心长方形</RC_Text_478dbd35dd35cbc6>
+  <RC_Text_a668b6c038385a2e>空间 · </RC_Text_a668b6c038385a2e>
+  <RC_Text_f6296762dd8cc26b>空间触发器</RC_Text_f6296762dd8cc26b>
+  <RC_Text_b3d15ea65942bab1>空间触发器 </RC_Text_b3d15ea65942bab1>
+  <RC_Text_27b4420de81ec610>立即完成关卡，Target 可选撤离标记（省略回程）</RC_Text_27b4420de81ec610>
+  <RC_Text_1afb706b5cd4284b>笔刷款式…</RC_Text_1afb706b5cd4284b>
+  <RC_Text_45d50a18dc436de7>筛选：</RC_Text_45d50a18dc436de7>
+  <RC_Text_b5c41ab8cff663c2>箱内实物</RC_Text_b5c41ab8cff663c2>
+  <RC_Text_4b78e7b7ee8d4977>粘贴  Ctrl+V</RC_Text_4b78e7b7ee8d4977>
+  <RC_Text_31f85db6b297d006>粘贴会超出地图边界，请先移动原对象。</RC_Text_31f85db6b297d006>
+  <RC_Text_9af69965f173040b>素材</RC_Text_9af69965f173040b>
+  <RC_Text_cbe3eecc9dfa572a>累计伤害阈值</RC_Text_cbe3eecc9dfa572a>
+  <RC_Text_3d8ded37ace04eb2>累计受伤时间（秒）</RC_Text_3d8ded37ace04eb2>
+  <RC_Text_783d638053ea1897>组件</RC_Text_783d638053ea1897>
+  <RC_Text_9f6a57bbc2a42b30>组件自定义设置请在创作模式编辑后重新热测试。</RC_Text_9f6a57bbc2a42b30>
+  <RC_Text_2506f3c02bfaf8d9>组合 JSON 路径</RC_Text_2506f3c02bfaf8d9>
+  <RC_Text_f6f0fb888eebc8a7>组合.json</RC_Text_f6f0fb888eebc8a7>
+  <RC_Text_0ebf18e3779eddf1>组合库只保存实体布置；逻辑触发器请使用复制。</RC_Text_0ebf18e3779eddf1>
+  <RC_Text_959aff423ef73518>组合文件</RC_Text_959aff423ef73518>
+  <RC_Text_efc535a30e566e3f>经过时间</RC_Text_efc535a30e566e3f>
+  <RC_Text_019b5feb7eff2783>经过点</RC_Text_019b5feb7eff2783>
+  <RC_Text_395ba2f78a20138c>经过点（不停留）</RC_Text_395ba2f78a20138c>
+  <RC_Text_41234b742db2e844>绑定巡逻路线…</RC_Text_41234b742db2e844>
+  <RC_Text_efe05e1326eb33fc>继续 / Continue</RC_Text_efe05e1326eb33fc>
+  <RC_Text_00705098e0e4aa05>继续战役</RC_Text_00705098e0e4aa05>
+  <RC_Text_cb46f3244f9c52e4>继续添加已有路线的路点</RC_Text_cb46f3244f9c52e4>
+  <RC_Text_6fb04403d9d72581>编译成功；导出并重新加载模组后生效。</RC_Text_6fb04403d9d72581>
+  <RC_Text_051836569928a9f9>编辑</RC_Text_051836569928a9f9>
+  <RC_Text_6731b6249c7b141f>编辑列表 / Edit list (</RC_Text_6731b6249c7b141f>
+  <RC_Text_1ee12121a522fe11>编辑初始内容物 (</RC_Text_1ee12121a522fe11>
+  <RC_Text_f1c36a6cc58ce963>编辑本图阵营与关系</RC_Text_f1c36a6cc58ce963>
+  <RC_Text_43e50002062bf651>编辑模式：地板与地形不参与选取。</RC_Text_43e50002062bf651>
+  <RC_Text_2f8f4d1031a45862>编辑绑定 / Edit bindings (</RC_Text_2f8f4d1031a45862>
+  <RC_Text_d93a9e454b1abcec>编辑路线（顺序、停留、朝向、往返）</RC_Text_d93a9e454b1abcec>
+  <RC_Text_91f55e9396088491>编辑阶段与行为</RC_Text_91f55e9396088491>
+  <RC_Text_c6fd9622174abd38>背后</RC_Text_c6fd9622174abd38>
+  <RC_Text_1b0c7766d70ee9ed>背后制伏</RC_Text_1b0c7766d70ee9ed>
+  <RC_Text_b92a3fc550234d26>背景不透明度 0–1（默认 0.28）</RC_Text_b92a3fc550234d26>
+  <RC_Text_9925c3662b8743c8>自动剧情通讯</RC_Text_9925c3662b8743c8>
+  <RC_Text_226d1d1ec7bb7048>自动对外传输：关闭；由清醒守卫报告</RC_Text_226d1d1ec7bb7048>
+  <RC_Text_238d0bfd707c171d>自动对外传输：开启（需要通讯设备）</RC_Text_238d0bfd707c171d>
+  <RC_Text_34514f7469584263>自动显示秒数</RC_Text_34514f7469584263>
+  <RC_Text_cf200ee8905af499>自定义头像路径</RC_Text_cf200ee8905af499>
+  <RC_Text_e16423bdcfe5c6a5>范围内标准伤害</RC_Text_e16423bdcfe5c6a5>
+  <RC_Text_0a1a2d94b3b01f6f>范围：20–500。已有内容保持原坐标。
+缩小前请移走边界外的内容；修改支持撤销。</RC_Text_0a1a2d94b3b01f6f>
+  <RC_Text_818c54152af0ef3a>蓝色选择信：Name 标题，Text 正文，Steps 为选项及其动作</RC_Text_818c54152af0ef3a>
+  <RC_Text_1880ad959ad0ebad>行动员角色</RC_Text_1880ad959ad0ebad>
+  <RC_Text_7403afb9ece2f119>补给已领取。</RC_Text_7403afb9ece2f119>
+  <RC_Text_46f7f584674a167e>裁剪宽度 0–1</RC_Text_46f7f584674a167e>
+  <RC_Text_b79fb33c14e47f82>裁剪左侧 0–1</RC_Text_b79fb33c14e47f82>
+  <RC_Text_26510e71468837af>裁剪顶部 0–1</RC_Text_26510e71468837af>
+  <RC_Text_b7b8be432cbb2c3e>裁剪高度 0–1</RC_Text_b7b8be432cbb2c3e>
+  <RC_Text_1c5c067138704dda>视图</RC_Text_1c5c067138704dda>
+  <RC_Text_3608625bdcc76447>视距（格）</RC_Text_3608625bdcc76447>
+  <RC_Text_e650587f7f79f937>视野角度</RC_Text_e650587f7f79f937>
+  <RC_Text_c47b54e84e79d77f>角色</RC_Text_c47b54e84e79d77f>
+  <RC_Text_3058a665685a05be>角色 / Boss</RC_Text_3058a665685a05be>
+  <RC_Text_b5b9cad6cb126aea>角色 / 单位类型</RC_Text_b5b9cad6cb126aea>
+  <RC_Text_f2179461f51270c1>角色 / 战役角色</RC_Text_f2179461f51270c1>
+  <RC_Text_e9589f55a2908aac>角色档案</RC_Text_e9589f55a2908aac>
+  <RC_Text_fd008b826f56f3ad>角色档案：确认后保存独立副本</RC_Text_fd008b826f56f3ad>
+  <RC_Text_c0506b0b753a1016>角色：</RC_Text_c0506b0b753a1016>
+  <RC_Text_4d991ee42db953fa>解锁门：Target 门；开启并保持通行</RC_Text_4d991ee42db953fa>
+  <RC_Text_974aa4cc7fd3c8c2>解除所选角色的巡逻绑定</RC_Text_974aa4cc7fd3c8c2>
+  <RC_Text_36a9985292e3c230>触发半径（格）</RC_Text_36a9985292e3c230>
+  <RC_Text_35a4e49d34672cb1>触发器</RC_Text_35a4e49d34672cb1>
+  <RC_Text_726512c516760634>触发器内的通讯与演出在其动作列表编辑；此处管理地图入场、失败和公共动作组。</RC_Text_726512c516760634>
+  <RC_Text_94674128d76fa9a3>触发器已放置；拖动移动，在右侧配置范围、检测对象与动作。</RC_Text_94674128d76fa9a3>
+  <RC_Text_3c7b79b734942877>触发方式</RC_Text_3c7b79b734942877>
+  <RC_Text_f5b588bac2d1cacf>设备已停用。</RC_Text_f5b588bac2d1cacf>
+  <RC_Text_929bae54666af81f>设备控制：Target 设备ID，Text 为 capture/disable/enable</RC_Text_929bae54666af81f>
+  <RC_Text_701c43d81d39b1ae>设定建筑电量与开关：Target 建筑，Value 为0关闭或1开启</RC_Text_701c43d81d39b1ae>
+  <RC_Text_df3d58c7d84b85f2>设置</RC_Text_df3d58c7d84b85f2>
+  <RC_Text_da9fc8ba94970b9d>设置…</RC_Text_da9fc8ba94970b9d>
+  <RC_Text_6c60b67d1b4a47a3>说话者（无头像时渲染角色）</RC_Text_6c60b67d1b4a47a3>
+  <RC_Text_e225d0db1f0d7e59>请先返回主菜单，再从创作界面开始热测试。</RC_Text_e225d0db1f0d7e59>
+  <RC_Text_a1de4a2c1a3d3374>请带上已取得的任务物品：</RC_Text_a1de4a2c1a3d3374>
+  <RC_Text_951c00207e98a4ba>请输入整数。</RC_Text_951c00207e98a4ba>
+  <RC_Text_119d3e88e1a28bbb>读取存档 / Load game</RC_Text_119d3e88e1a28bbb>
+  <RC_Text_aacf0697c998364f>调查档案 / Records</RC_Text_aacf0697c998364f>
+  <RC_Text_a5a83e189d1abf0e>路线 ▾</RC_Text_a5a83e189d1abf0e>
+  <RC_Text_decaae665b51e0c7>路线名称</RC_Text_decaae665b51e0c7>
+  <RC_Text_a59ced02a636c15e>辅助层包含巡逻路点、触发器与区域。锁定后仍可查看，不参与地图框选和拖动。</RC_Text_a59ced02a636c15e>
+  <RC_Text_cf121e9283f58c53>输入不匹配，或触发器当前不可用。</RC_Text_cf121e9283f58c53>
+  <RC_Text_7673702e6ff62144>输入密码</RC_Text_7673702e6ff62144>
+  <RC_Text_62dd72b974b0a748>辨认所需 tick（守卫近距／摄像头连续）</RC_Text_62dd72b974b0a748>
+  <RC_Text_572cf45ba43634b3>返回</RC_Text_572cf45ba43634b3>
+  <RC_Text_e34e61a243bec5e1>返回主菜单</RC_Text_e34e61a243bec5e1>
+  <RC_Text_1dfa1bf5fa7cb8e9>返回主菜单？请先保存需要保留的通关进度。</RC_Text_1dfa1bf5fa7cb8e9>
+  <RC_Text_d4e4b7c1c94469d8>进入检测范围</RC_Text_d4e4b7c1c94469d8>
+  <RC_Text_d81ad7a38d881478>进入阶段动作</RC_Text_d81ad7a38d881478>
+  <RC_Text_2747e2fe4d22fdd9>进入阶段时锁血</RC_Text_2747e2fe4d22fdd9>
+  <RC_Text_3e9d52137c9c36bc>适应全图</RC_Text_3e9d52137c9c36bc>
+  <RC_Text_c11330b85234f9c0>选择</RC_Text_c11330b85234f9c0>
+  <RC_Text_9ab8169c023e38d2>选择可见的物品，前往拾取并收入背包，供后续关卡使用。</RC_Text_9ab8169c023e38d2>
+  <RC_Text_b22a42d19c4e6c47>选择地图对象以编辑属性。</RC_Text_b22a42d19c4e6c47>
+  <RC_Text_e9962977e08cd6d2>选择定义 / Choose Def</RC_Text_e9962977e08cd6d2>
+  <RC_Text_8b79fa30540da9cf>选择放置组</RC_Text_8b79fa30540da9cf>
+  <RC_Text_662f204e9e872c2d>选择物品</RC_Text_662f204e9e872c2d>
+  <RC_Text_15e82af92c0584e9>选择物品、数量和适用材质。应用时检查容量；内容物会随建筑生成并保存在存档中。</RC_Text_15e82af92c0584e9>
+  <RC_Text_df609defd98940ec>通报延迟 tick</RC_Text_df609defd98940ec>
+  <RC_Text_29a05487420df8c0>通报距离</RC_Text_29a05487420df8c0>
+  <RC_Text_8d48a4ba3f56f374>通讯</RC_Text_8d48a4ba3f56f374>
+  <RC_Text_727a5826177abf59>通讯渲染模块</RC_Text_727a5826177abf59>
+  <RC_Text_c6c0d5362514fd0e>通讯频谱条</RC_Text_c6c0d5362514fd0e>
+  <RC_Text_552c323573776fd9>逻辑 · </RC_Text_552c323573776fd9>
+  <RC_Text_4fa01441ecd33d95>逻辑触发器</RC_Text_4fa01441ecd33d95>
+  <RC_Text_881905f45b1e4d29>遮挡与门的衰减</RC_Text_881905f45b1e4d29>
+  <RC_Text_9c12003ebb6b64b3>部分掩体遮蔽未警觉守卫</RC_Text_9c12003ebb6b64b3>
+  <RC_Text_93bbc303a0966046>重做  Ctrl+Y</RC_Text_93bbc303a0966046>
+  <RC_Text_e61036548bc767fb>重新校验</RC_Text_e61036548bc767fb>
+  <RC_Text_211ee3aac569cf4f>重试本关</RC_Text_211ee3aac569cf4f>
+  <RC_Text_4792216e1e475981>重试本关 / Retry level</RC_Text_4792216e1e475981>
+  <RC_Text_d77410d2c937036e>锁定辅助对象</RC_Text_d77410d2c937036e>
+  <RC_Text_eab1f7274feea1bf>长方形</RC_Text_eab1f7274feea1bf>
+  <RC_Text_5a62168befd6843a>阵营</RC_Text_5a62168befd6843a>
+  <RC_Text_ddb58a219c16e35a>阵营 </RC_Text_ddb58a219c16e35a>
+  <RC_Text_107e78706defd8d2>阵营名称不能为空。</RC_Text_107e78706defd8d2>
+  <RC_Text_162c21d51cc78546>阶段动作结束后解锁</RC_Text_162c21d51cc78546>
+  <RC_Text_db267ba2313cbdcb>阶段血量比例（0–1）</RC_Text_db267ba2313cbdcb>
+  <RC_Text_18ed80c22b140079>阻止敌人汇报</RC_Text_18ed80c22b140079>
+  <RC_Text_ee1340b368f2d034>随机整数：Target 变量，Value 上限（含）</RC_Text_ee1340b368f2d034>
+  <RC_Text_22efa51ccf4a8496>随机选择一款并固定</RC_Text_22efa51ccf4a8496>
+  <RC_Text_cdef70e2fa7d6a6e>需要位于未警觉目标背后，目标须在周围相邻八格或四向直线第二格内，且不能隔墙。</RC_Text_cdef70e2fa7d6a6e>
+  <RC_Text_79f326be4409d51f>项目</RC_Text_79f326be4409d51f>
+  <RC_Text_ae809c254df8a7e2>项目 JSON 路径</RC_Text_ae809c254df8a7e2>
+  <RC_Text_a2923487e0ae0a54>项目设置</RC_Text_a2923487e0ae0a54>
+  <RC_Text_f2cab65e91650425>预览入场／失败演出</RC_Text_f2cab65e91650425>
+  <RC_Text_de298d3234b84abd>预览占位：</RC_Text_de298d3234b84abd>
+  <RC_Text_6cf1c021b801a62c>领取地图生成时已初始化的奖励；Target 奖励 ID，重复触发不会再次发放</RC_Text_6cf1c021b801a62c>
+  <RC_Text_4efb164731f933a1>频谱柱数量（3–256）</RC_Text_4efb164731f933a1>
+  <RC_Text_369bf0a5d1525671>高 Z</RC_Text_369bf0a5d1525671>
+  <RC_Text_0a83a871cadfe4bb>默认材质</RC_Text_0a83a871cadfe4bb>
+  <RC_Text_a8fdc9a3a719ec99>（实际效果请导出后测试）</RC_Text_a8fdc9a3a719ec99>
+  <RC_Text_ca37ddca3b8107bb>＋ 新建地图</RC_Text_ca37ddca3b8107bb>
+  <RC_Text_45cf7c95bfba830c>＋ 添加</RC_Text_45cf7c95bfba830c>
+  <RC_Text_cb26283553b03f59>＋ 添加非空间触发器</RC_Text_cb26283553b03f59>
+  <RC_Text_45c1cdd6c9556844>：固定贴图款式</RC_Text_45c1cdd6c9556844>
+  <RC_Text_b76d77d7cb6ac024>：已添加第 </RC_Text_b76d77d7cb6ac024>
+  <RC_Text_9997bbcff087ee2e>；可撤销。</RC_Text_9997bbcff087ee2e>
+  <RC_Text_68b7fab1dd296bc7>；空列表表示不限制）</RC_Text_68b7fab1dd296bc7>
+  <RC_Text_f0269b45ab441a03>JSON 内容错误：该文件不是有效的战役工程。
+</RC_Text_f0269b45ab441a03>
+  <RC_Text_efd708ff8f2064e6>JSON 文件保存失败：请检查目录权限、文件占用和磁盘空间。
+</RC_Text_efd708ff8f2064e6>
+  <RC_Text_b053e1cc13847ead>JSON 文件访问失败：没有读取权限。
+</RC_Text_b053e1cc13847ead>
+  <RC_Text_f0ea2f99e893db47>JSON 文件读取失败：
+</RC_Text_f0ea2f99e893db47>
+  <RC_Text_7e3ba46b2ed1024c>JSON 路径错误：找不到文件，请检查文件名和所在目录。
+</RC_Text_7e3ba46b2ed1024c>
+  <RC_Text_abb1e73099e377f8>JSON 路径错误：文件扩展名必须为 .json。
+</RC_Text_abb1e73099e377f8>
+  <RC_Text_488ac2f23276dc5f>JSON 路径错误：请输入文件的完整路径。</RC_Text_488ac2f23276dc5f>
+  <RC_Text_f049ab72b17cfd7a>JSON 路径错误：路径格式无效。
+</RC_Text_f049ab72b17cfd7a>
+  <RC_Text_6d455924cfd3f117>JSON 路径错误：选择的是文件夹，请指定其中的 .json 文件。
+</RC_Text_6d455924cfd3f117>
+  <RC_Text_5ade7df2d2c06bb0>工程没有地图。</RC_Text_5ade7df2d2c06bb0>
+  <RC_Text_02ae0e1599940640>闲谈双方最大间距（格）</RC_Text_02ae0e1599940640>
+  <RC_Text_f2c7f131d92e2659>通关补满饮食、休息与娱乐</RC_Text_f2c7f131d92e2659>
+  <RC_Text_cff0d6bd7c1d30b9>密码不正确，请重新输入。</RC_Text_cff0d6bd7c1d30b9>
+  <RC_Text_c45bd04bdc2cb25a>当前任务已结束，无法提交密码。</RC_Text_c45bd04bdc2cb25a>
+  <RC_Text_8da8368228f84da2>操作角色当前无法使用设备。</RC_Text_8da8368228f84da2>
+  <RC_Text_2e281d25df3f7f3a>操作角色已离开设备，请靠近后重新操作。</RC_Text_2e281d25df3f7f3a>
+  <RC_Text_d873f0a39f35ba9b>设备已损毁或停用。</RC_Text_d873f0a39f35ba9b>
+  <RC_Text_ce76aaaab4f870a2>密码已提交或此门已解锁，请关闭窗口。</RC_Text_ce76aaaab4f870a2>
+  <RC_Text_aae4409bc2b747dd>尚未满足此设备的解锁条件。</RC_Text_aae4409bc2b747dd>
+  <RC_Text_a5b7740db3f58a42>密码触发器已停用。</RC_Text_a5b7740db3f58a42>
+  <RC_Text_6e48c1f7c39bfad7>此设备缺少有效的密码触发器配置。</RC_Text_6e48c1f7c39bfad7>
+  <RC_Text_eee5f393360c2fe0>封路后销毁交互宿主</RC_Text_eee5f393360c2fe0>
+  <RC_Text_b18bd5111868d4cf>备注仅供地图作者阅读，不参与游戏逻辑。</RC_Text_b18bd5111868d4cf>
+  <RC_Text_4f8b0ab088ec2524>保存备注</RC_Text_4f8b0ab088ec2524>
+  <RC_Text_1511b58bc45f3819>添加用途备注…</RC_Text_1511b58bc45f3819>
+  <RC_Text_7fdd1741c9c45365>编辑备注：</RC_Text_7fdd1741c9c45365>
+  <RC_Text_949b454bc8643d0e>备注（仅编辑器说明）</RC_Text_949b454bc8643d0e>
+  <RC_Text_cc70852335bba679>作者关联对象</RC_Text_cc70852335bba679>
+  <RC_Text_ba40014ff496f64e>类型</RC_Text_ba40014ff496f64e>
+  <RC_Text_b4d7d450f617bcae>定义</RC_Text_b4d7d450f617bcae>
+  <RC_Text_f2026bd47d82355c>材质</RC_Text_f2026bd47d82355c>
+  <RC_Text_05aab30632595bb6>剧情角色</RC_Text_05aab30632595bb6>
+  <RC_Text_d388153c2d3e8d53>继承战役角色</RC_Text_d388153c2d3e8d53>
+  <RC_Text_811e1838afd68c0a>放置组</RC_Text_811e1838afd68c0a>
+  <RC_Text_df69a4a7767dd34f>编辑图层</RC_Text_df69a4a7767dd34f>
+  <RC_Text_9e5e3d8177beb7fc>首领模板</RC_Text_9e5e3d8177beb7fc>
+  <RC_Text_094355b60a3fbaf3>执行条件</RC_Text_094355b60a3fbaf3>
+  <RC_Text_ef2f10be676e040e>顺序动作</RC_Text_ef2f10be676e040e>
+  <RC_Text_24c3524057911787>否则执行</RC_Text_24c3524057911787>
+  <RC_Text_9317177d95ed68f4>目标 / 状态变量</RC_Text_9317177d95ed68f4>
+  <RC_Text_979df9b1305fd3aa>文本 / 参数</RC_Text_979df9b1305fd3aa>
+  <RC_Text_c5500a58e0c52625>数值</RC_Text_c5500a58e0c52625>
+  <RC_Text_45e59eb87d456f3e>暂停游戏时间</RC_Text_45e59eb87d456f3e>
+  <RC_Text_e2ff7f4a5db87fd3>玩家可见操作名称</RC_Text_e2ff7f4a5db87fd3>
+  <RC_Text_c205536d17c01626>仅可操作一次</RC_Text_c205536d17c01626>
+  <RC_Text_8c2cd0d52eff23b8>落石阻挡格</RC_Text_8c2cd0d52eff23b8>
+  <RC_Text_feb2f245a43c6977>阻挡物定义</RC_Text_feb2f245a43c6977>
+  <RC_Text_3046a11e46a847e9>必须保留通路的撤离格</RC_Text_3046a11e46a847e9>
+  <RC_Text_eafe409ab44d74a7>操作后销毁宿主</RC_Text_eafe409ab44d74a7>
+  <RC_Text_4050ab5c0a944704>绑定角色</RC_Text_4050ab5c0a944704>
+  <RC_Text_d6e6a4ce91483165>地图路点</RC_Text_d6e6a4ce91483165>
+  <RC_Text_e24110ff5d91cf38>判断方式</RC_Text_e24110ff5d91cf38>
+  <RC_Text_6aa39d79ef77f22e>状态变量</RC_Text_6aa39d79ef77f22e>
+  <RC_Text_711e0e5f6e3694ac>组合条件</RC_Text_711e0e5f6e3694ac>
+  <RC_Text_7e561b2f0972885a>秒数</RC_Text_7e561b2f0972885a>
+  <RC_Text_5a891229db8b507f>设置状态</RC_Text_5a891229db8b507f>
+  <RC_Text_e366c4f64d10ea38>增加状态</RC_Text_e366c4f64d10ea38>
+  <RC_Text_d88aaf0f48061794>设置战役状态</RC_Text_d88aaf0f48061794>
+  <RC_Text_778254bff77ab10d>播放通讯</RC_Text_778254bff77ab10d>
+  <RC_Text_a9bf96144347e4cc>播放对话</RC_Text_a9bf96144347e4cc>
+  <RC_Text_9933d98156ffe44d>显示消息</RC_Text_9933d98156ffe44d>
+  <RC_Text_5267612371d3c304>显示字幕</RC_Text_5267612371d3c304>
+  <RC_Text_251bc40e7027dfc0>等待</RC_Text_251bc40e7027dfc0>
+  <RC_Text_ec413509e3614cdb>依次执行</RC_Text_ec413509e3614cdb>
+  <RC_Text_792c4751b0aa6e90>同时执行</RC_Text_792c4751b0aa6e90>
+  <RC_Text_0fefc3e3fbf4f968>接管演出</RC_Text_0fefc3e3fbf4f968>
+  <RC_Text_c6de23d6f88f4639>条件分支</RC_Text_c6de23d6f88f4639>
+  <RC_Text_11e890b31facc3fd>执行公共动作组</RC_Text_11e890b31facc3fd>
+  <RC_Text_5736aeb22a19e56e>启用 / 禁用触发器</RC_Text_5736aeb22a19e56e>
+  <RC_Text_e9f4c250b5b8a151>更新目标</RC_Text_e9f4c250b5b8a151>
+  <RC_Text_78ba628921469907>生成对象</RC_Text_78ba628921469907>
+  <RC_Text_3053c8d868c893a3>销毁对象</RC_Text_3053c8d868c893a3>
+  <RC_Text_d8430c5b7ae42d43>移除对象</RC_Text_d8430c5b7ae42d43>
+  <RC_Text_b3a364c2eba9ae02>移动角色</RC_Text_b3a364c2eba9ae02>
+  <RC_Text_fa595e668bc2e2f1>移动镜头</RC_Text_fa595e668bc2e2f1>
+  <RC_Text_6d09c49db204535b>画面淡入淡出</RC_Text_6d09c49db204535b>
+  <RC_Text_324225eef1d76994>任务完成</RC_Text_324225eef1d76994>
+  <RC_Text_558518b13361ab07>任务失败</RC_Text_558518b13361ab07>
+  <RC_Text_460cabbef2e99bdb>设置计时器</RC_Text_460cabbef2e99bdb>
+  <RC_Text_246f139dcf25819a>播放音效</RC_Text_246f139dcf25819a>
+  <RC_Text_ea96728e2f6e4198>领取奖励</RC_Text_ea96728e2f6e4198>
+  <RC_Text_3df0c89b2af2f4fc>折跃建筑</RC_Text_3df0c89b2af2f4fc>
+  <RC_Text_7409a608060f5804>未指定</RC_Text_7409a608060f5804>
+  <RC_Text_e0d32dc901c709a4>无附加条件</RC_Text_e0d32dc901c709a4>
+  <RC_Text_a22bdbe928cd9a35> 且 </RC_Text_a22bdbe928cd9a35>
+  <RC_Text_60ab743988bb19f7> 或 </RC_Text_60ab743988bb19f7>
+  <RC_Text_f870d38cc9127db4>不满足：</RC_Text_f870d38cc9127db4>
+  <RC_Text_6f3f44a5dc2d0ea9>接近：</RC_Text_6f3f44a5dc2d0ea9>
+  <RC_Text_6d1f8ad23ef08a98> 格</RC_Text_6d1f8ad23ef08a98>
+  <RC_Text_ccd6ca4db06ee826>带路角色已到达撤离点</RC_Text_ccd6ca4db06ee826>
+  <RC_Text_eb707f4f9458748a>所属巡逻路线</RC_Text_eb707f4f9458748a>
+  <RC_Text_b2d472209f470388>路点</RC_Text_b2d472209f470388>
+  <RC_Text_e750a5ebb7cb1186>本路线绑定角色</RC_Text_e750a5ebb7cb1186>
+  <RC_Text_725a60699f904aa4>可执行交互</RC_Text_725a60699f904aa4>
+  <RC_Text_159fe056571e1ad3>操作墙体 / 建筑</RC_Text_159fe056571e1ad3>
+  <RC_Text_1eb3ac38168b4e37>检测宿主</RC_Text_1eb3ac38168b4e37>
+  <RC_Text_e1f0cf27ba5092ad>相关触发器</RC_Text_e1f0cf27ba5092ad>
+  <RC_Text_5f025d69cecafe40>事件来源</RC_Text_5f025d69cecafe40>
+  <RC_Text_ead8bca5ed6a5894>动作目标</RC_Text_ead8bca5ed6a5894>
+  <RC_Text_112c5c618b9a3bc5>作者关联</RC_Text_112c5c618b9a3bc5>
+  <RC_Text_7dd82fc80275a3c5>引用已失效：</RC_Text_7dd82fc80275a3c5>
+  <RC_Text_979de8f3a1ed4d63>巡逻路点；本身不生成游戏物体。延伸的黄色线段表示路径。</RC_Text_979de8f3a1ed4d63>
+  <RC_Text_4b9cc3db507b4403>角色放置；下方可查看并跳转巡逻路线。</RC_Text_4b9cc3db507b4403>
+  <RC_Text_5410f502ab911c5b>定位标记；本身不生成游戏物体。</RC_Text_5410f502ab911c5b>
+  <RC_Text_096a8f945f358c04>地图实体</RC_Text_096a8f945f358c04>
+  <RC_Text_0871f0abbd534341>位置：</RC_Text_0871f0abbd534341>
+  <RC_Text_52f33ef5e68dfa26>此路线尚未绑定角色，不会驱动巡逻。</RC_Text_52f33ef5e68dfa26>
+  <RC_Text_4fca229695733307>开局生成：</RC_Text_4fca229695733307>
+  <RC_Text_b5141d3d19e9a048>是</RC_Text_b5141d3d19e9a048>
+  <RC_Text_3af26fdbe1773003>否，由剧情生成</RC_Text_3af26fdbe1773003>
+  <RC_Text_6d891e818538ad84>路点数量：</RC_Text_6d891e818538ad84>
+  <RC_Text_15d00e9c8dfe17f4>往返</RC_Text_15d00e9c8dfe17f4>
+  <RC_Text_ad3221dd6681f3f5>循环</RC_Text_ad3221dd6681f3f5>
+  <RC_Text_0ea8aca65cd3af61>触发：</RC_Text_0ea8aca65cd3af61>
+  <RC_Text_a26bfcbf7ac83a58>条件：</RC_Text_a26bfcbf7ac83a58>
+  <RC_Text_eaf096280d7b0e67>玩家操作：</RC_Text_eaf096280d7b0e67>
+  <RC_Text_fdecaad2ad57d997>封路格数：</RC_Text_fdecaad2ad57d997>
+  <RC_Text_499ee87a048357ee>暂无备注；可在属性中补充用途说明。</RC_Text_499ee87a048357ee>
+  <RC_Text_4eb0def4dfe900d9>关联对象（点击定位）</RC_Text_4eb0def4dfe900d9>
+  <RC_Text_5cbc4064cbe6cfaa>角色放置；选择后查看巡逻绑定</RC_Text_5cbc4064cbe6cfaa>
+  <RC_Text_2e2e2df76f3ce227>可操作建筑与封路</RC_Text_2e2e2df76f3ce227>
+  <RC_Text_5108a8f74b7f3734>概览与关联</RC_Text_5108a8f74b7f3734>
+  <RC_Text_1ece4ac1f0afc58b>属性与备注</RC_Text_1ece4ac1f0afc58b>
+  <RC_Text_f11a120f9161cba6>按顺序执行的动作</RC_Text_f11a120f9161cba6>
+  <RC_Text_ca83baff890325c3>开始枪匠教学</RC_Text_ca83baff890325c3>
+  <RC_Text_43fcbd1ddf6ade0c>记录谜题顺序</RC_Text_43fcbd1ddf6ade0c>
+  <RC_Text_b0c89a2a5d413cc8>开始引路</RC_Text_b0c89a2a5d413cc8>
+  <RC_Text_6965940e5ffd143d>添加状态效果</RC_Text_6965940e5ffd143d>
+  <RC_Text_066ec351a91af00d>启用 / 停用首领</RC_Text_066ec351a91af00d>
+  <RC_Text_c206f2eaf66afeda>播放特效</RC_Text_c206f2eaf66afeda>
+  <RC_Text_9bca01cb07ba7411>命令角色射击</RC_Text_9bca01cb07ba7411>
+  <RC_Text_f16dd80f7747b80a>设置自由开火</RC_Text_f16dd80f7747b80a>
+  <RC_Text_2dbb5d8d06050e69>显示开场行动文字</RC_Text_2dbb5d8d06050e69>
+  <RC_Text_74ed7e142b74f9eb>播放沙盘简报</RC_Text_74ed7e142b74f9eb>
+  <RC_Text_f3d7b6402a245978>初始化第二关</RC_Text_f3d7b6402a245978>
+  <RC_Text_0027899ac24875a3>显示任务阶段标题</RC_Text_0027899ac24875a3>
+  <RC_Text_b7245348f921ec91>聚焦演出目标</RC_Text_b7245348f921ec91>
+  <RC_Text_0126edcb9b3e244d>揭示骑士身份</RC_Text_0126edcb9b3e244d>
+  <RC_Text_c6e00a8ba9e09acd>绑定角色到此路线…</RC_Text_c6e00a8ba9e09acd>
+  <RC_Text_b969d35d5a7cb7ac>设置巡逻路线…</RC_Text_b969d35d5a7cb7ac>
+  <RC_Text_01bc01b32975b903>北</RC_Text_01bc01b32975b903>
+  <RC_Text_5469a6af4ceaad28>东</RC_Text_5469a6af4ceaad28>
+  <RC_Text_b2f94b1034506f37>南</RC_Text_b2f94b1034506f37>
+  <RC_Text_b9f0c815459caa83>西</RC_Text_b9f0c815459caa83>
+  <RC_Text_27ec25d914b08b3d>批量修改阵营…</RC_Text_27ec25d914b08b3d>
+  <RC_Text_b33fb40f7f95eb7c>已批量修改阵营：</RC_Text_b33fb40f7f95eb7c>
+  <RC_Text_2af3debbb4f28320>；跳过不支持阵营的对象：</RC_Text_2af3debbb4f28320>
+  <RC_Text_7e6205431686a548>。可撤销。</RC_Text_7e6205431686a548>
+  <RC_Text_a262f5d709a5d258>已按各自占地中心旋转 </RC_Text_a262f5d709a5d258>
+  <RC_Text_a136efa17b14e3a2>已围绕整组占地中心旋转 </RC_Text_a136efa17b14e3a2>
+  <RC_Text_16a9dcb798bca57e>JSON 路径错误：文件扩展名必须为 .json 或 .json.gz。
+</RC_Text_16a9dcb798bca57e>
+</LanguageData>

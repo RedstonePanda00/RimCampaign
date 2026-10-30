@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -15,8 +15,46 @@ class Program
         public bool Execute(Act a, string source, double dt) { Effects++;Sources.Add(source);return true; }
     }
     static Act A(string kind, string target = "", double value = 0, string text = "") => new Act { Kind = kind, Target = target, Value = value, Text = text };
-    static void Main()
+    static void CheckMapViewport()
     {
+        var view=new RimCampaign.Editor.MapViewport();
+        bool Near(float a,float b)=>Math.Abs(a-b)<.001f;
+        view.Configure("small",80,40,800,600);
+        Assert(Near(view.X,120)&&Near(view.Y,160),"initial map centered on both axes");
+        view.LookAt(0,0);
+        Assert(Near(view.CenterX,40)&&Near(view.CenterY,20),"small map stays centered when navigating");
+        view.Configure("large",500,300,800,600);
+        Assert(Near(view.CenterX,250)&&Near(view.CenterY,150),"switching maps centers the new map");
+        view.LookAt(150,100);
+        view.Configure("large",500,300,1000,700);
+        Assert(Near(view.CenterX,150)&&Near(view.CenterY,100),"sidebar resize preserves viewed map position");
+        float anchorX=(350-view.X)/view.Zoom,anchorY=(250-view.Y)/view.Zoom;
+        view.ZoomAt(-3,350,250);
+        Assert(Near((350-view.X)/view.Zoom,anchorX)&&Near((250-view.Y)/view.Zoom,anchorY),"zoom keeps the map point beneath the cursor");
+        view.LookAt(-100,-100);
+        Assert(Near(view.VisibleLeft,0)&&Near(view.VisibleTop,0),"minimap navigation clamps the top left edge");
+        view.LookAt(1000,1000);
+        Assert(Near(view.VisibleRight,500)&&Near(view.VisibleBottom,300),"minimap navigation clamps the bottom right edge");
+        Assert(Near(view.VisibleRight-view.VisibleLeft,view.ViewWidth/view.Zoom)&&Near(view.VisibleBottom-view.VisibleTop,view.ViewHeight/view.Zoom),"minimap frame matches visible cells");
+        view.Fit();
+        Assert(view.Width*view.Zoom<=view.ViewWidth&&view.Height*view.Zoom<=view.ViewHeight&&Near(view.CenterX,250)&&Near(view.CenterY,150),"fit shows the entire rectangular map centered");
+        Assert(Near(view.VisibleLeft,0)&&Near(view.VisibleTop,0)&&Near(view.VisibleRight,500)&&Near(view.VisibleBottom,300),"fit minimap frame covers whole map");
+        view.Configure("large",300,500,1000,700);
+        Assert(Near(view.CenterX,150)&&Near(view.CenterY,250),"map size change recenters");
+        view.Reset();view.Configure("large",300,500,1000,700);
+        Assert(Near(view.Zoom,7)&&Near(view.CenterX,150)&&Near(view.CenterY,250),"reopening the same project resets camera");
+        view.ZoomAt(1000,500,350);
+        Assert(Near(view.Zoom,.1f),"zoom out has a positive lower bound");
+        view.ZoomAt(-1000,500,350);
+        Assert(Near(view.Zoom,32),"zoom in is bounded");
+    }
+    static void Main(string[] args)
+    {
+        ProjectStorageTests.Run(Assert);
+        StructureTests.Run(Assert);ScopedHistoryTests.Run(Assert);
+        BossComponentTests.Run(Assert);
+        StealthTests.Run(Assert);CommunicationTests.Run(Assert);ResultTests.Run(Assert);SpectrumTests.Run(Assert);
+        CheckMapViewport();MapModuleTests.Run(Assert);TriggerGeometryTests.Run(Assert);CinematicTests.Run(Assert);TaskTreeTests.Run(Assert);
         var map = new MapSpec();
         map.Objectives.Add(new Objective { Id = "hero", Name = "Hero alive" });
         map.Rules.Add(new Rule { Actions = new List<Act> { A("Objective", "hero", text:"Failed"), A("Fail"), A("Win") } });
@@ -79,7 +117,11 @@ class Program
             string exported = Exporter.Export(demo, exportParent, demoReport);
             Assert(XDocument.Load(Path.Combine(exported,"About","About.xml")).Descendants("supportedVersions").Single().Elements().Select(x=>x.Value).SequenceEqual(new[]{"1.7"}), "export supports only 1.7");
             Assert(XDocument.Load(Path.Combine(exported,"LoadFolders.xml")).Root.Element("v1.7") != null, "export load folders target 1.7");
-            Assert(File.Exists(Path.Combine(exported,"1.7","Defs","Campaigns.xml")) && File.Exists(Path.Combine(exported,"1.7","Campaigns","project.json")), "1.7 campaign payload exported");
+            var campaignPath=Path.Combine(exported,"1.7","Campaigns","project.json.gz");
+            Assert(File.Exists(Path.Combine(exported,"1.7","Defs","Campaigns.xml")) && File.Exists(campaignPath), "compressed 1.7 campaign payload exported");
+            Assert(!File.Exists(Path.Combine(exported,"1.7","Campaigns","project.json")), "export omits duplicate uncompressed campaign payload");
+            Assert(XDocument.Load(Path.Combine(exported,"1.7","Defs","Campaigns.xml")).Root.Element("RimCampaign.Runtime.CampaignDef").Element("projectFile").Value=="Campaigns/project.json.gz", "runtime definition points at compressed campaign");
+            Assert(Json.Load<Project>(campaignPath).Campaigns[0].Id==demo.Campaigns[0].Id, "runtime loader reads compressed exported campaign");
             Assert(!Directory.Exists(Path.Combine(exported,"1.6")), "export contains no 1.6 runtime");
         } finally { if (Directory.Exists(exportParent)) Directory.Delete(exportParent, true); }
         var generatedProject=Demo.Create();
@@ -134,6 +176,18 @@ class Program
         memory.Inside["pawn1"]=true;memory.Dead=true;memory.AddDamage(70,5);s.Triggers["bound"]=memory;
         var restored=Json.Copy(s);Assert(restored.Triggers["bound"].Inside["pawn1"]&&restored.Triggers["bound"].Dead&&restored.Triggers["bound"].Damage[0].Amount==5,"trigger edges and accumulation survive save/reload");
         Assert(Json.Read<Placement>("{\"Kind\":\"PawnKind\"}").SpawnAtStart,"existing placements still spawn on entry");
+        Assert(Json.Read<Placement>("{\"Kind\":\"Thing\"}").Contents.Count==0,"legacy placements default to empty contents");
+        Assert(Json.Read<Placement>("{\"Kind\":\"Thing\"}").GraphicIndex==null,"legacy placement has no forced variant zero");
+        var fixedGraphic=new Placement{GraphicIndex=0};
+        Assert(Json.Copy(fixedGraphic).GraphicIndex==0,"first graphic variant survives nullable JSON roundtrip");
+        fixedGraphic.GraphicIndex=3;
+        Assert(History<Project>.CopyObjects(new List<Placement>{fixedGraphic},1,1).Single().GraphicIndex==3,"copy preserves chosen graphic variant");
+        var stored=new Placement{Contents=new List<DeviceLoot>{new DeviceLoot{Def=new DefRef{Name="TextBook",Package="example.books"},Count=2}}};
+        Assert(Json.Copy(stored).Contents[0].Count==2,"building contents survive project serialization");
+        var storageProject=new Project{Maps=new List<MapSpec>{new MapSpec{Objects=new List<Placement>{stored}}}};
+        Assert(Dependencies.Scan(storageProject,new List<Dependency>()).Uses.ContainsKey("example.books"),"contents contribute export dependencies");
+        stored.Contents[0].Count=0;
+        Assert(Validation.Check(storageProject).Any(i=>i.Message=="Invalid building contents."),"reject invalid building contents count");
         Assert(Json.Read<Rule>("{}").DamageWindowSeconds==5&&Json.Read<Rule>("{}").Radius==5,"legacy rule defaults populated");
         var phases=new BossTemplate{MaxHealth=1000,Phases=new List<BossPhase>{new BossPhase(),new BossPhase{HealthFraction=.6,LockHealth=true},new BossPhase{HealthFraction=.3,LockHealth=true,AutoUnlock=false}}};
         var hit=BossHealth.Apply(phases,1000,0,false,5000);Assert(hit.Health==600&&hit.Phase==1&&hit.Locked&&hit.Entered.SequenceEqual(new[]{1}),"overkill stops at first lock, discards overflow");
@@ -142,6 +196,28 @@ class Program
         hit=BossHealth.Apply(phases,300,2,false,5000);Assert(hit.Health==0&&!hit.Locked,"final unlocked phase can die");
         phases.Phases[1].LockHealth=phases.Phases[2].LockHealth=false;hit=BossHealth.Apply(phases,1000,0,false,800);Assert(hit.Health==200&&hit.Entered.SequenceEqual(new[]{1,2}),"unlocked crossed phases each emit an entry");
         Assert(Json.Read<BossPhase>("{}").AutoUnlock&&Json.Read<BossPhase>("{}").OnEnter.Count==0,"legacy boss phase defaults");
+        var startShape=new Cell{X=2,Z=2};var endShape=new Cell{X=6,Z=6};
+        Assert(SurfaceBrush.Cells(startShape,endShape,20,20,"Rectangle").Count==25,"rectangle area brush includes both endpoints");
+        Assert(SurfaceBrush.Cells(startShape,endShape,20,20,"HollowRectangle").Count==16,"hollow rectangle is a one-cell border");
+        var disk=SurfaceBrush.Cells(startShape,endShape,20,20,"Ellipse");var ring=SurfaceBrush.Cells(startShape,endShape,20,20,"Ring");
+        Assert(disk.Any(c=>c.X==4&&c.Z==4)&&!disk.Any(c=>c.X==2&&c.Z==2),"ellipse fills center and excludes rectangle corner");
+        Assert(!ring.Any(c=>c.X==4&&c.Z==4)&&ring.All(c=>disk.Any(d=>d.X==c.X&&d.Z==c.Z)),"hollow ring excludes center and stays within ellipse");
+        Assert(Json.Write(SurfaceBrush.Cells(endShape,startShape,20,20,"Ring"))==Json.Write(ring),"area brushes support reverse drag");
+        Assert(SurfaceBrush.Cells(new Cell{X=-10,Z=-10},endShape,5,5,"Rectangle").Count==25,"area brush clips to map boundary");
+        Assert(SurfaceBrush.Cells(startShape,startShape,20,20,"Ring").Count==1,"single-cell ring remains paintable");
+        var bounded=new History<List<string>>(new List<string>{new string('x',100000)},maxEntries:5,maxBytes:16384);
+        for(int i=0;i<30;i++)bounded.Edit(v=>v.Add("edit-"+i));
+        Assert(bounded.UndoCount==5&&bounded.RetainedBytes<16384,"compressed history bounds retained entries and bytes");
+        for(int i=0;i<5;i++)bounded.Undo();
+        Assert(bounded.Value.Count==26&&bounded.RedoCount==5,"bounded history restores retained edits in order");
+        for(int i=0;i<5;i++)bounded.Redo();
+        Assert(bounded.Value.Last()=="edit-29"&&bounded.Value.Count==31,"compressed history preserves full redo sequence");
+        bounded.Undo();bounded.Edit(v=>v.Add("branch"));
+        Assert(bounded.RedoCount==0&&bounded.Value.Last()=="branch","new edits clear compressed redo branch");
+        var failedHistory=Json.Write(bounded.Value);try{bounded.Edit(v=>{v.Clear();throw new InvalidOperationException();});}catch(InvalidOperationException){}
+        Assert(Json.Write(bounded.Value)==failedHistory,"failed edit restores state with compressed history");
+        var tinyHistory=new History<List<string>>(new List<string>(),maxEntries:10,maxBytes:1);tinyHistory.Edit(v=>v.Add("kept"));
+        Assert(tinyHistory.Value.Single()=="kept"&&tinyHistory.RetainedBytes==0,"snapshot above memory limit is discarded without losing current edit");
         Console.WriteLine("PASS: " + count + " assertions");
     }
 }

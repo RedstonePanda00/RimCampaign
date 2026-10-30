@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,85 +21,67 @@ namespace RimCampaign.Editor
     static class MenuEntry
     {
         static void Postfix(Rect rect) {
-            if(Current.ProgramState==ProgramState.Entry&&Widgets.ButtonText(new Rect(rect.x-220,rect.y,205,45),"RimCampaign 创作"))Find.WindowStack.Add(new Workspace());
+            HotTestSession.ReturnToEditor();
+            if(Current.ProgramState==ProgramState.Entry&&EditorUI.Button(new Rect(rect.x-220,rect.y,205,45),RimCampaign.Runtime.RcText.T("RimCampaign 创作")))Find.WindowStack.Add(new Workspace());
         }
     }
-    public class Workspace : Window
+    public partial class Workspace : Window
     {
         History<Project> history;string mapId,tab="Map",search="",source="",category="Thing",status="",path="";
-        Vector2 assetsScroll,sceneScroll,canvasOffset=new Vector2(20,20),graphOffset=new Vector2(20,20);float zoom=7,left=235,right=270;
+        Vector2 assetsScroll,sceneScroll,graphOffset=new Vector2(20,20);float left=235,right=270;
+        readonly MapViewport mapView=new MapViewport();
+        Texture2D terrainPreview;MapSpec terrainPreviewMap;bool terrainPreviewDirty=true;
+        Vector2 canvasOffset { get=>new Vector2(mapView.X,mapView.Y); set=>mapView.SetOffset(value.x,value.y); }
+        float zoom=>mapView.Zoom;
         bool leftOpen=true,rightOpen=true,dragLeft,dragRight,showAux=true,lockAux;
         Placement brush;string tool="",selectedId="";HashSet<string> selection=new HashSet<string>();
-        List<Placement> clipboard=new List<Placement>();Vector2 dragStart;Cell origin;bool dragging;string dragSnapshot;
+        List<Placement> clipboard=new List<Placement>();Vector2 dragStart;Cell origin;bool dragging;
         bool painting;string paintSnapshot;Placement paintBrush;Cell paintLast;readonly HashSet<int> painted=new HashSet<int>();
         bool panning,panMoved;int panButton;Vector2 panStart,panLast;
+        int focusRevision;
+        bool applicationWasFocused=Application.isFocused;
+        bool focusCancellationPending;
         Dictionary<string,Cell> originalPositions=new Dictionary<string,Cell>();
         public static string WorkRoot=>Path.Combine(GenFilePaths.SaveDataFolderPath,"RimCampaign");
         public Project Project=>history.Value;
-        public MapSpec Map=>Project.Maps.FirstOrDefault(m=>m.Id==mapId)??Project.Maps.First();
+        public MapSpec Map { get { var maps=Project.Maps;for(int i=0;i<maps.Count;i++)if(maps[i].Id==mapId)return maps[i];return maps[0]; } }
         public override Vector2 InitialSize=>new Vector2(UI.screenWidth-24,UI.screenHeight-24);
         public Workspace() {
             forcePause=true;doCloseX=true;absorbInputAroundWindow=true;preventCameraMotion=true;
             var p=NewProject();history=new History<Project>(p);mapId=p.Maps[0].Id;
         }
         static Project NewProject(){
-            var m=new MapSpec{Name="地图 1"};m.Hud.Add(new HudWidget{Kind="Objectives",Name="目标列表",Height=120});
-            return new Project{Name="新战役",Maps=new List<MapSpec>{m}};
+            var m=new MapSpec{Name=RimCampaign.Runtime.RcText.T("地图 1")};m.Hud.Add(new HudWidget{Kind="Objectives",Name=RimCampaign.Runtime.RcText.T("目标列表"),Height=120});
+            return new Project{Name=RimCampaign.Runtime.RcText.T("新战役"),Maps=new List<MapSpec>{m}};
         }
-        void Edit(Action<Project> change){history.Edit(change);}
+        void Edit(Action<Project> change){try{history.Edit(p=>{change(p);if(p.Maps.Count>0){PatrolAuthoring.Synchronize(Map);TerrainInitializer.ClearLayoutOverlaps(Map);}});}finally{InvalidateScene();}}
+        void ObserveApplicationFocus(){
+            if(applicationWasFocused&&!Application.isFocused)focusCancellationPending=true;
+            applicationWasFocused=Application.isFocused;
+        }
+        public override void WindowUpdate(){base.WindowUpdate();ObserveApplicationFocus();}
         public override void DoWindowContents(Rect r) {
             try{
-                Toolbar(r);
-                float lx=leftOpen?left:0,rx=rightOpen?right:0;
-                var center=new Rect(lx+8,84,r.width-lx-rx-16,r.height-118);
-                if(leftOpen)Library(new Rect(0,84,left,r.height-118));
-                if(rightOpen)Properties(new Rect(r.width-right,84,right,r.height-118));
-                if(tab=="Map")DrawMap(center);else DrawGraph(center);
-                Resize(r,center);
-                Widgets.Label(new Rect(0,r.height-29,r.width,29),status);
-                HandleKeys();
+                ObserveApplicationFocus();
+                if(focusCancellationPending){CancelPointerGestures();focusCancellationPending=false;}
+                if(focusRevision!=EditorFocus.Revision){EditorFocus.Clear();focusRevision=EditorFocus.Revision;}
+                EnsureSceneIndex();
+                DrawEditorShell(r);
+                if(Application.isFocused)HandleKeys();
             }catch(Exception ex){status=ex.GetBaseException().Message;Log.ErrorOnce("[RimCampaign editor] "+ex,ex.GetType().GetHashCode());}
-        }
-        void Toolbar(Rect r) {
-            float x=0;
-            void B(string label,float width,Action a){if(Widgets.ButtonText(new Rect(x,0,width,32),label))a();x+=width+4;}
-            B("新建",60,()=>{history=new History<Project>(NewProject());mapId=Project.Maps[0].Id;path="";});
-            B("打开",60,()=>Prompt("项目 JSON 路径",path,s=>{var p=Json.Load<Project>(s);history=new History<Project>(p);mapId=p.Maps.First().Id;path=s;}));
-            B("保存",60,Save);
-            B("导出",60,Export);
-            B("撤销",60,()=>history.Undo());B("重做",60,()=>history.Redo());
-            B("项目设置",90,()=>Find.WindowStack.Add(new ObjectWindow(Project,o=>history.Replace((Project)o),Project)));
-            B("角色档案",90,()=>Find.WindowStack.Add(new ProfilesWindow(Project,p=>Edit(x=>x.Profiles=p))));
-            B("校验",60,Validate);
-            B("C# 扩展",85,()=>Prompt("C# 文件路径", "",s=>Compile(s)));
-            B("预览",60,()=>Find.WindowStack.Add(new PreviewWindow(Map)));
-            if(Widgets.ButtonText(new Rect(0,40,95,30),leftOpen?"◀ 素材":"▶ 素材"))leftOpen=!leftOpen;
-            if(Widgets.ButtonText(new Rect(100,40,95,30),rightOpen?"属性 ▶":"属性 ◀"))rightOpen=!rightOpen;
-            if(Widgets.ButtonText(new Rect(200,40,100,30),tab=="Map"?"切换战役图":"返回地图"))tab=tab=="Map"?"Campaign":"Map";
-            if(Widgets.ButtonText(new Rect(305,40,160,30),Map.Name))EditorUI.Pick(Project.Maps.Select(m=>new KeyValuePair<string,string>(m.Id,m.Name)),s=>mapId=s);
-            if(Widgets.ButtonText(new Rect(470,40,80,30),"+ 地图"))Edit(p=>{var m=new MapSpec{Name="地图 "+(p.Maps.Count+1)};p.Maps.Add(m);mapId=m.Id;});
-            if(Widgets.ButtonText(new Rect(555,40,90,30),"地图设置"))Find.WindowStack.Add(new ObjectWindow(Map,o=>{var draft=(MapSpec)o;var error=MapSizeError(draft,draft.Width,draft.Height);if(error!=null)throw new InvalidOperationException(error);Edit(p=>p.Maps[p.Maps.FindIndex(m=>m.Id==mapId)]=draft);},Project));
-            if(Widgets.ButtonText(new Rect(650,40,80,30),"生成底图"))GenerateBase();
-            if(Widgets.ButtonText(new Rect(735,40,80,30),showAux?"辅助 ✓":"辅助"))showAux=!showAux;
-            if(Widgets.ButtonText(new Rect(820,40,80,30),lockAux?"已锁定":"锁定辅助"))lockAux=!lockAux;
-            if(Widgets.ButtonText(new Rect(905,40,155,30),"地图尺寸 "+Map.Width+"×"+Map.Height))
-                Find.WindowStack.Add(new MapSizeWindow(Map.Width,Map.Height,TryResizeMap));
-            if(Widgets.ButtonText(new Rect(1065,40,90,30),"地图阵营"))
-                Find.WindowStack.Add(new MapFactionsWindow(Map,draft=>Edit(p=>p.Maps[p.Maps.FindIndex(m=>m.Id==draft.Id)]=draft)));
         }
         internal string TryResizeMap(int width,int height) {
             var error=MapSizeError(Map,width,height);if(error!=null)return error;
-            int oldHeight=Map.Height;
-            Edit(_=>{Map.Width=width;Map.Height=height;});
-            canvasOffset.y-=(height-oldHeight)*zoom;
-            status="地图尺寸已改为 "+width+" × "+height+"；可撤销。";
+            Edit(_=>{Map.Width=width;Map.Height=height;if(Map.TerrainInitialization!=null)TerrainInitializer.RegenerateUnderLayout(Map);});
+            status=RimCampaign.Runtime.RcText.T("地图尺寸已改为 ")+width+" × "+height+RimCampaign.Runtime.RcText.T("；可撤销。");
             return null;
         }
         internal static string MapSizeError(MapSpec map,int width,int height) {
-            if(width<20||height<20||width>500||height>500)return "宽和高都必须是 20–500 之间的整数。";
+            if(width<20||height<20||width>500||height>500)return RimCampaign.Runtime.RcText.T("宽和高都必须是 20–500 之间的整数。");
             bool Outside(Cell c)=>c==null||c.X<0||c.Z<0||c.X>=width||c.Z>=height;
             var blocked=new List<string>();
             foreach(var p in map.Objects) {
+                if(TerrainInitializer.Generated(p))continue;
                 bool outside=Outside(p.Position);
                 var def=p.Kind=="Thing"?DefDatabase<ThingDef>.GetNamedSilentFail(p.Def.Name):null;
                 if(!outside&&def!=null) {
@@ -108,158 +90,178 @@ namespace RimCampaign.Editor
                 }
                 if(outside)blocked.Add(p.Name);
             }
-            blocked.AddRange(map.Regions.Where(a=>Outside(a.Min)||Outside(a.Max)).Select(a=>a.Name));
-            blocked.AddRange(map.Rules.Where(a=>Outside(a.Position)).Select(a=>a.Name));
-            return blocked.Count==0?null:"有 "+blocked.Count+" 个对象、区域或触发器会超出边界。请先移动或删除：\n"+string.Join("、",blocked.Take(6));
+            blocked.AddRange(map.Regions.Concat(map.NaturalClearings).Where(a=>Outside(a.Min)||Outside(a.Max)).Select(a=>a.Name));
+            blocked.AddRange(map.Rules.Where(a=>TriggerGeometry.Visible(a)&&Outside(a.Position)).Select(a=>a.Name));
+            blocked.AddRange(map.Stealth.Routes.Concat(map.PatrolRoutes).Where(a=>a.Points.Any(p=>Outside(p.Position))).Select(a=>a.Name));
+            blocked.AddRange(map.Stealth.Devices.Where(a=>string.IsNullOrEmpty(a.Host)&&Outside(a.Position)).Select(a=>a.Name));
+            return blocked.Count==0?null:RimCampaign.Runtime.RcText.T("有 ")+blocked.Count+RimCampaign.Runtime.RcText.T(" 个对象、区域或触发器会超出边界。请先移动或删除：\n")+string.Join("、",blocked.Take(6));
+        }
+        void OpenProject(string input) {
+            var resolved=ProjectFiles.ResolvePath(input,true);
+            CancelPointerGestures();
+            LongEventHandler.QueueLongEvent(()=>{
+                var watch=System.Diagnostics.Stopwatch.StartNew();
+                bool missionFile=resolved.EndsWith(".rcmission.json",StringComparison.OrdinalIgnoreCase);
+                Project loaded;
+                if(missionFile){var mission=Json.Load<MissionMapSpec>(resolved);MissionMaps.Validate(mission);loaded=mission.Project;}
+                else loaded=ProjectFiles.Load(resolved);
+                LongEventHandler.ExecuteWhenFinished(()=>{
+                    history=new History<Project>(loaded);mapId=loaded.Maps[0].Id;path=missionFile?"":resolved;
+                    mapView.Reset();selectedId="";selection.Clear();inlineEditor=null;InvalidateScene();
+                    status=RimCampaign.Runtime.RcText.T("已加载 ")+resolved;
+                });
+                Log.Message("[RimCampaign editor] Project load: "+watch.ElapsedMilliseconds+" ms");
+            },"LoadingLongEvent",true,ex=>{status=ex.Message;LongEventHandler.ExecuteWhenFinished(()=>EditorUI.Error(ex));});
         }
         void Save() {
-            if(path==""){Prompt("保存项目 JSON",Path.Combine(WorkRoot,"Projects",Project.PackageId+".json"),s=>{path=s;Json.Save(path,Project);status="已保存 "+path;});return;}
-            Json.Save(path,Project);status="已保存 "+path;
+            if(path==""){Prompt(RimCampaign.Runtime.RcText.T("保存项目 JSON"),Path.Combine(WorkRoot,"Projects",Project.PackageId+".project.json.gz"),s=>{ProjectFiles.Save(s,Project);path=ProjectFiles.ResolvePath(s,false);status=RimCampaign.Runtime.RcText.T("已保存 ")+path;});return;}
+            try{ProjectFiles.Save(path,Project);status=RimCampaign.Runtime.RcText.T("已保存 ")+path;}catch(Exception ex){EditorUI.Error(ex);}
         }
         public static void Prompt(string title,string value,Action<string> done)=>Find.WindowStack.Add(new TextPrompt(title,value,done));
         void Export() {
-            var report=Dependencies.Scan(Project,CampaignDef.Catalog());var issues=Validation.Check(Project);
-            if(issues.Count>0||report.Errors.Count>0){status="导出校验失败";Find.WindowStack.Add(new Dialog_MessageBox(string.Join("\n",issues.Select(i=>i.ToString()).Concat(report.Errors))));return;}
-            Prompt("导出父目录",Path.Combine(WorkRoot,"Exports"),s=>{
-                var result=Exporter.Export(Project,s,report,path==""?null:Path.GetDirectoryName(path));status="已导出 "+result;
-                Find.WindowStack.Add(new Dialog_MessageBox("战役包已生成：\n"+result+"\n\n启用该子模组并重新加载游戏后，在新游戏剧本中选择战役。"));
+            var report=Dependencies.Scan(Project,CampaignDef.Catalog());var issues=Validation.Check(Project);issues.AddRange(PlacementIssues());
+            if(issues.Count>0||report.Errors.Count>0){status=RimCampaign.Runtime.RcText.T("导出校验失败");Find.WindowStack.Add(new Dialog_MessageBox(string.Join("\n",issues.Select(i=>i.ToString()).Concat(report.Errors))));return;}
+            Prompt(RimCampaign.Runtime.RcText.T("导出父目录"),Path.Combine(WorkRoot,"Exports"),s=>{
+                var result=Exporter.Export(Project,s,report,path==""?null:Path.GetDirectoryName(path));status=RimCampaign.Runtime.RcText.T("已导出 ")+result;
+                Find.WindowStack.Add(new Dialog_MessageBox(RimCampaign.Runtime.RcText.T("战役包已生成：\n")+result+RimCampaign.Runtime.RcText.T("\n\n启用该子模组并重新加载游戏后，在新游戏剧本中选择战役。")));
             });
         }
-        void Validate() {
-            var issues=Validation.Check(Project);var report=Dependencies.Scan(Project,CampaignDef.Catalog());
-            if(issues.Count==0&&report.Errors.Count==0){status="校验通过；直接依赖 "+report.Direct.Count+"，loadAfter "+report.LoadAfter.Count;return;}
-            EditorUI.Pick(issues.Select(i=>new KeyValuePair<string,string>(i.Path,i.ToString())),s=>{
-                var parts=s.Split('/');if(Project.Maps.Any(m=>m.Id==parts[0])){mapId=parts[0];tab="Map";selectedId=parts.Length>1?parts[1]:"";}status=s;
-            });
-            if(report.Errors.Count>0)Find.WindowStack.Add(new Dialog_MessageBox(string.Join("\n",report.Errors)));
+        void Validate(){RefreshProblems();SwitchWorkspace("Problems");}
+        IEnumerable<Issue> PlacementIssues(){
+            foreach(var placement in Project.Maps.SelectMany(m=>m.Objects).Concat(Project.Campaigns.SelectMany(c=>c.Nodes).SelectMany(n=>n.Resources))){
+                string error=null;try{PlacementStorage.Validate(placement);}catch(Exception ex){error=ex.Message;}
+                if(error!=null)yield return new Issue{Path=placement.Id,Message=error};
+            }
         }
         void Compile(string sourcePath) {
-            var output=ExtensionCompiler.Compile(Project,sourcePath);Edit(p=>{p.CustomAssemblies.RemoveAll(a=>Path.GetFileName(a)==Path.GetFileName(output));p.CustomAssemblies.Add(output);});status="编译成功；导出并重新加载模组后生效。";
+            var output=ExtensionCompiler.Compile(Project,sourcePath);Edit(p=>{p.CustomAssemblies.RemoveAll(a=>Path.GetFileName(a)==Path.GetFileName(output));p.CustomAssemblies.Add(output);});status=RimCampaign.Runtime.RcText.T("编译成功；导出并重新加载模组后生效。");
         }
-        void Library(Rect r) {
+        string assetListKey;List<Def> assetList;
+        void AssetLibrary(Rect r) {
             GUI.BeginGroup(r);
             search=Widgets.TextField(new Rect(0,0,r.width,29),search);
-            if(Widgets.ButtonText(new Rect(0,34,r.width,27),source==""?"全部模组":source))EditorUI.Pick(new[]{""}.Concat(LoadedModManager.RunningMods.Select(m=>m.PackageIdPlayerFacing)),s=>source=s);
-            if(Widgets.ButtonText(new Rect(0,65,r.width,27),category))EditorUI.Pick(new[]{"Thing","Terrain","Roof","PawnKind","Pawn","Boss","Marker","Region","Trigger","Scene"},s=>category=s);
+            if(EditorUI.Button(new Rect(0,34,r.width,27),source==""?RimCampaign.Runtime.RcText.T("全部模组"):source))EditorUI.Pick(new[]{""}.Concat(LoadedModManager.RunningMods.Select(m=>m.PackageIdPlayerFacing)),s=>source=s);
+            if(EditorUI.Button(new Rect(0,65,r.width,27),AssetCategoryLabel(category)))EditorUI.Pick(new[]{"Thing","Floor","Terrain","Roof","PawnKind","Pawn","Boss","Marker","Region","Trigger"}.Select(v=>new KeyValuePair<string,string>(v,AssetCategoryLabel(v))),s=>{
+                if(s=="Floor"||s=="Terrain")SetEditMode(s);
+                else{if(editMode!="Edit")SetEditMode("Edit");category=s;}
+            });
             if(category=="Boss") {
                 if(Project.Bosses==null)Project.Bosses=new List<BossTemplate>();
-                if(Widgets.ButtonText(new Rect(0,100,r.width,32),"+ Boss 模板"))Edit(p=>p.Bosses.Add(new BossTemplate{Name="新 Boss"}));
+                if(EditorUI.Button(new Rect(0,100,r.width,32),RimCampaign.Runtime.RcText.T("+ Boss 模板")))Edit(p=>p.Bosses.Add(new BossTemplate{Name=RimCampaign.Runtime.RcText.T("新 Boss")}));
                 Widgets.BeginScrollView(new Rect(0,140,r.width,r.height-140),ref assetsScroll,new Rect(0,0,r.width-20,Project.Bosses.Count*72));
                 for(int i=0;i<Project.Bosses.Count;i++) {
                     var boss=Project.Bosses[i];float y=i*72;
-                    if(Widgets.ButtonText(new Rect(0,y,r.width-24,32),"放置 · "+boss.Name)){brush=new Placement{Kind="Boss",Boss=boss.Id,Name=boss.Name,Faction="Hostile"};tool="Place";}
-                    if(Widgets.ButtonText(new Rect(0,y+34,r.width-24,30),"编辑阶段与行为"))Find.WindowStack.Add(new ObjectWindow(boss,o=>Edit(p=>p.Bosses[p.Bosses.FindIndex(b=>b.Id==boss.Id)]=(BossTemplate)o),Project));
+                    if(EditorUI.Button(new Rect(0,y,r.width-24,32),RimCampaign.Runtime.RcText.T("放置 · ")+boss.Name)){EditorFocus.Release();brush=new Placement{Kind="Boss",Boss=boss.Id,Name=boss.Name,Faction="Hostile"};tool="Place";}
+                    if(EditorUI.Button(new Rect(0,y+34,r.width-24,30),RimCampaign.Runtime.RcText.T("编辑阶段与行为")))Find.WindowStack.Add(new ObjectWindow(boss,o=>Edit(p=>p.Bosses[p.Bosses.FindIndex(b=>b.Id==boss.Id)]=(BossTemplate)o),Project));
                 }
                 Widgets.EndScrollView();GUI.EndGroup();return;
             }
-            if(category=="Scene") {Scene(new Rect(0,98,r.width,r.height-98));GUI.EndGroup();return;}
             if(new[]{"Pawn","Marker","Region","Trigger"}.Contains(category)) {
-                if(Widgets.ButtonText(new Rect(0,105,r.width,35),"放置 "+category)){tool=category;brush=null;}
+                if(EditorUI.Button(new Rect(0,105,r.width,35),RimCampaign.Runtime.RcText.T("放置 ")+AssetCategoryLabel(category))){EditorFocus.Release();tool=category;brush=null;}
                 GUI.EndGroup();return;
             }
-            var type=category=="PawnKind"?"PawnKindDef":category=="Terrain"?"TerrainDef":category=="Roof"?"RoofDef":"ThingDef";
-            var list=EditorUI.Defs(type).Where(d=>(source==""||d.modContentPack?.PackageIdPlayerFacing==source)&&
+            var type=category=="PawnKind"?"PawnKindDef":category=="Terrain"||category=="Floor"?"TerrainDef":category=="Roof"?"RoofDef":"ThingDef";
+            var key=category+"\n"+source+"\n"+search+"\n"+LanguageDatabase.activeLanguage.folderName;
+            if(assetList==null||assetListKey!=key){
+            assetListKey=key;
+            assetList=EditorUI.Defs(type).Where(d=>(source==""||d.modContentPack?.PackageIdPlayerFacing==source)&&
                 ((d.label??"").IndexOf(search,StringComparison.OrdinalIgnoreCase)>=0||d.defName.IndexOf(search,StringComparison.OrdinalIgnoreCase)>=0)).
-                Where(d=>!(d is ThingDef t)||t.category!=ThingCategory.Pawn).ToList();
-            Widgets.BeginScrollView(new Rect(0,98,r.width,r.height-98),ref assetsScroll,new Rect(0,0,r.width-18,list.Count*40));
+                Where(d=>!(d is ThingDef t)||t.category!=ThingCategory.Pawn).
+                Where(d=>!(d is TerrainDef terrain)||TerrainSurfaces.IsFloor(terrain)==(category=="Floor")).ToList();
+            }
+            var list=assetList;
+            float listTop=98;
+            if(category=="Terrain"||category=="Floor"||category=="Roof"){
+                if(EditorUI.Button(new Rect(0,98,r.width,32),category=="Roof"?RimCampaign.Runtime.RcText.T("擦除屋顶（含厚岩顶）"):category=="Floor"?RimCampaign.Runtime.RcText.T("擦除地板 → 露出底层地形"):RimCampaign.Runtime.RcText.T("恢复默认地形（保留地板）"))){
+                    EditorFocus.Release();
+                    brush=new Placement{Kind=category=="Roof"?"EraseRoof":category=="Floor"?"EraseFloor":"EraseTerrain",Name=category=="Roof"?RimCampaign.Runtime.RcText.T("擦除屋顶"):category=="Floor"?RimCampaign.Runtime.RcText.T("擦除地板"):RimCampaign.Runtime.RcText.T("恢复默认地形")};tool="Place";
+                }
+                listTop=136;
+            }
+            Widgets.BeginScrollView(new Rect(0,listTop,r.width,r.height-listTop),ref assetsScroll,new Rect(0,0,r.width-18,list.Count*40));
             int first=Math.Max(0,(int)(assetsScroll.y/40)-1),last=Math.Min(list.Count,first+(int)(r.height/40)+4);
             for(int i=first;i<last;i++){
                 var d=list[i];var row=new Rect(0,i*40,r.width-22,36);
                 if(d is ThingDef thing)Widgets.DefIcon(new Rect(0,row.y,32,32),thing);
-                if(Widgets.ButtonText(new Rect(36,row.y,row.width-36,36),d.LabelCap)){
-                    brush=new Placement{Kind=category,Def=Profiles.Ref(d),Name=d.LabelCap,Layer=category=="Thing"?"Objects":category};tool="Place";
-                    if(d is ThingDef td&&td.MadeFromStuff)brush.Stuff=Profiles.Ref(GenStuff.DefaultStuffFor(td));
+                if(EditorUI.Button(new Rect(36,row.y,row.width-36,36),d.LabelCap)){
+                    EditorFocus.Release();
+                    brush=new Placement{Kind=category=="Floor"?"Terrain":category,Def=Profiles.Ref(d),Name=d.LabelCap,Layer=category=="Thing"?"Objects":category};tool="Place";
+                    if(d is ThingDef td&&td.MadeFromStuff){var selectedBrush=brush;selectedBrush.Stuff=Profiles.Ref(GenStuff.DefaultStuffFor(td));EditorUI.PickStuff(td,stuff=>selectedBrush.Stuff=stuff);}
                 }
             }Widgets.EndScrollView();GUI.EndGroup();
         }
-        IEnumerable<Named> SceneItems()=>Map.Objects.Cast<Named>().Concat(Map.Regions).Concat(Map.Rules).Concat(Map.Objectives).Concat(Map.Hud);
-        void Scene(Rect r){
-            var items=SceneItems().Where(x=>x.Name.IndexOf(search,StringComparison.OrdinalIgnoreCase)>=0).ToList();
-            Widgets.BeginScrollView(r,ref sceneScroll,new Rect(0,0,r.width-18,items.Count*32));
-            for(int i=0;i<items.Count;i++)if(Widgets.ButtonText(new Rect(0,i*32,r.width-22,29),(items[i].Id==selectedId?"● ":"")+items[i].Name)){
-                selectedId=items[i].Id;selection.Clear();selection.Add(selectedId);
-            }Widgets.EndScrollView();
-        }
-        void Properties(Rect r) {
-            GUI.BeginGroup(r);var selected=SceneItems().FirstOrDefault(o=>o.Id==selectedId);
-            Widgets.Label(new Rect(0,0,r.width,40),selected==null?"选择地图对象":selected.Name);
-            float y=45;
-            void B(string label,Action action){if(Widgets.ButtonText(new Rect(0,y,r.width,33),label))action();y+=39;}
-            if(selected!=null) {
-                B("编辑属性 / Edit",()=>EditObject(selected));
-                B("删除（检查引用）",Delete);
-                if(selected is Placement p){
-                    B("旋转 R",()=>Edit(_=>p.Rotation=(p.Rotation+1)%4));
-                    B("复制 Ctrl+C",Copy);B("保存组合",()=>Prompt("组合文件",Path.Combine(WorkRoot,"Prefabs",p.Name+".json"),s=>Json.Save(s,Map.Objects.Where(o=>selection.Contains(o.Id)).ToList())));
-                    Widgets.Label(new Rect(0,y,r.width,80),"X: "+p.Position.X+"  Z: "+p.Position.Z+"\n来源: "+p.Def.Package);y+=80;
-                }
-            }
-            B("+ 触发器",()=>AddTrigger(new Cell{X=Map.Width/2,Z=Map.Height/2}));
-            B("+ 任务目标",()=>{var o=new Objective{Name="新目标"};Edit(_=>Map.Objectives.Add(o));EditObject(o);});
-            B("+ HUD",()=>{var w=new HudWidget{Name="信息",Text="信息"};Edit(_=>Map.Hud.Add(w));EditObject(w);});
-            B("入场演出",()=>EditActions("Entry"));B("失败演出",()=>EditActions("Defeat"));
-            B("导入组合",()=>Prompt("组合 JSON 路径","",s=>{clipboard=Json.Load<List<Placement>>(s);Paste();}));
-            B("依赖报告",()=>{var d=Dependencies.Scan(Project,CampaignDef.Catalog());Find.WindowStack.Add(new Dialog_MessageBox(string.Join("\n",d.Uses.Select(u=>u.Key+" ← "+string.Join(", ",u.Value)))+"\n\nloadAfter:\n"+string.Join("\n",d.LoadAfter)));});
-            GUI.EndGroup();
-        }
+        IEnumerable<Named> SceneItems()=>Map.Objects.Cast<Named>().Concat(Map.Regions).Concat(Map.Rules).Concat(Map.Objectives).Concat(Map.Hud).Concat(Map.Interactions).Concat(Map.PatrolRoutes).Concat(Map.Stealth.Routes);
         void EditActions(string name) {
             var copy=Json.Copy(Map);Find.WindowStack.Add(new ActionsWindow(name=="Entry"?copy.Entry:copy.Defeat,Project,()=>{
                 Edit(_=>{if(name=="Entry")Map.Entry=copy.Entry;else Map.Defeat=copy.Defeat;});
             }));
         }
         void EditObject(Named obj)=>Find.WindowStack.Add(new ObjectWindow(obj,value=>Edit(_=>{
-            if(obj is Placement)Map.Objects[Map.Objects.FindIndex(x=>x.Id==obj.Id)]=(Placement)value;
+            if(obj is Placement){PlacementStorage.Validate((Placement)value);Map.Objects[Map.Objects.FindIndex(x=>x.Id==obj.Id)]=(Placement)value;}
             else if(obj is Region)Map.Regions[Map.Regions.FindIndex(x=>x.Id==obj.Id)]=(Region)value;
             else if(obj is Rule)Map.Rules[Map.Rules.FindIndex(x=>x.Id==obj.Id)]=(Rule)value;
             else if(obj is Objective)Map.Objectives[Map.Objectives.FindIndex(x=>x.Id==obj.Id)]=(Objective)value;
             else if(obj is HudWidget)Map.Hud[Map.Hud.FindIndex(x=>x.Id==obj.Id)]=(HudWidget)value;
         }),Project,Map));
         void DrawMap(Rect r) {
+            mapView.Configure(Map.Id,Map.Width,Map.Height,r.width,r.height);
+            var minimap=MinimapPanel(r);
             Vector2 localMouse=Event.current.mousePosition-r.position;
+            bool overMinimap=minimap.Contains(Event.current.mousePosition);
+            if(Event.current.type==EventType.Repaint){
+            EnsureSceneIndex();
             Widgets.DrawBoxSolid(r,new Color(0.08f,0.10f,0.12f));
             GUI.BeginGroup(r);
             var size=new Rect(canvasOffset.x,canvasOffset.y,Map.Width*zoom,Map.Height*zoom);
             Widgets.DrawBoxSolid(size,new Color(0.27f,0.30f,0.22f));
-            foreach(var p in Map.Objects){
+            DrawTerrainPreview(size,new Vector2(r.width,r.height));
+            EnsureGraphicLinks();
+            foreach(var p in drawableObjects){
+                if(p.Kind=="Terrain")continue;
+                if(p.Kind=="Roof")continue;
                 if(!showAux&&p.Kind=="Marker")continue;
                 var at=new Rect(canvasOffset.x+p.Position.X*zoom,canvasOffset.y+(Map.Height-1-p.Position.Z)*zoom,zoom,zoom);
+                if(at.xMax < -zoom*4||at.yMax < -zoom*4||at.x>r.width+zoom*4||at.y>r.height+zoom*4)continue;
                 if(p.Kind=="Thing") {
                     var d=DefDatabase<ThingDef>.GetNamedSilentFail(p.Def.Name);
                     if(d!=null) {var bounds=GenAdj.OccupiedRect(new IntVec3(p.Position.X,0,p.Position.Z),new Rot4(p.Rotation),d.size);
                         at=new Rect(canvasOffset.x+bounds.minX*zoom,canvasOffset.y+(Map.Height-1-bounds.maxZ)*zoom,bounds.Width*zoom,bounds.Height*zoom);
-                        if(IsSelected(p.Id))IconOutline(at,d);Widgets.DefIcon(at,d);}
-                }else if(p.Kind=="Boss") {
-                    Widgets.DrawBoxSolid(at,new Color(.8f,.15f,.12f));
-                }else if(p.Kind=="PawnKind") {
-                    var kind=DefDatabase<PawnKindDef>.GetNamedSilentFail(p.Def.Name);if(kind!=null){if(IsSelected(p.Id))IconOutline(at,kind.race);Widgets.DefIcon(at,kind.race);}
+                        DrawThingGraphic(p,d,at);}
+                }else if(p.Kind=="Boss"||p.Kind=="PawnKind"||p.Kind=="Pawn") {
+                    DrawActorMarker(p,at);
                 }else Widgets.DrawBoxSolid(at,p.Kind=="Pawn"?Color.cyan:p.Kind=="Marker"?Color.yellow:p.Kind=="Roof"?new Color(.5f,.5f,.7f):TerrainColor(p.Def.Name));
                 if(IsSelected(p.Id))SelectionBorder(at);
             }
-            if(showAux)foreach(var rule in Map.Rules){
-                var at=new Rect(canvasOffset.x+rule.Position.X*zoom,canvasOffset.y+(Map.Height-1-rule.Position.Z)*zoom,Math.Max(20,zoom),Math.Max(20,zoom));
-                if(Widgets.ButtonText(at,"T")){selectedId=rule.Id;selection.Clear();if(Event.current.clickCount==2)EditObject(rule);}
-                TooltipHandler.TipRegion(at,rule.Name+"\n宿主："+EditorUI.HostLabel(Map,rule.Host)+"\n"+(rule.Once?"一次性":"持久（可重复）"));
-                if(IsSelected(rule.Id)) {
-                    SelectionBorder(at);
-                    var host=Map.Objects.FirstOrDefault(o=>o.Id==rule.Host||(rule.Host=="role:"+o.Role&&o.Kind=="Pawn"));
-                    var center=host?.Position??rule.Position;
-                    if(rule.Events.Any(e=>e.Kind=="RangeEnter"||e.Kind=="RangeLeave")) {
-                        var origin=new Vector2(canvasOffset.x+(center.X+.5f)*zoom,canvasOffset.y+(Map.Height-center.Z-.5f)*zoom);
-                        for(int segment=0;segment<64;segment++){
-                            float a=segment*Mathf.PI/32,b=(segment+1)*Mathf.PI/32;
-                            Widgets.DrawLine(origin+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*rule.Radius*zoom,origin+new Vector2(Mathf.Cos(b),Mathf.Sin(b))*rule.Radius*zoom,new Color(.2f,.85f,1f,.7f),1);
-                        }
-                    }
+            DrawHullPreview(r.width,r.height);
+            if(showRoofs)foreach(var roof in roofObjects){
+                var at=new Rect(canvasOffset.x+roof.Position.X*zoom,canvasOffset.y+(Map.Height-1-roof.Position.Z)*zoom,zoom,zoom);
+                if(at.xMax<0||at.yMax<0||at.x>r.width||at.y>r.height)continue;
+                Widgets.DrawBoxSolid(at,roof.Def.Name=="RoofRockThick"?new Color(.35f,.25f,.65f,.5f):new Color(.5f,.65f,.9f,.3f));
+                if(IsSelected(roof.Id))SelectionBorder(at);
+            }
+            if(brush?.Kind=="Thing"&&!overMinimap&&size.Contains(localMouse)&&new Rect(0,0,r.width,r.height).Contains(localMouse)){
+                var def=DefDatabase<ThingDef>.GetNamedSilentFail(brush.Def.Name);
+                if(def!=null){
+                    var ghost=new Placement{Id=brush.Id,GraphicIndex=brush.GraphicIndex,Def=brush.Def,Stuff=brush.Stuff,Rotation=brush.Rotation,Position=new Cell{X=Mathf.FloorToInt((localMouse.x-canvasOffset.x)/zoom),Z=Map.Height-1-Mathf.FloorToInt((localMouse.y-canvasOffset.y)/zoom)}};
+                    var bounds=GenAdj.OccupiedRect(new IntVec3(ghost.Position.X,0,ghost.Position.Z),new Rot4(ghost.Rotation),def.size);
+                    var at=new Rect(canvasOffset.x+bounds.minX*zoom,canvasOffset.y+(Map.Height-1-bounds.maxZ)*zoom,bounds.Width*zoom,bounds.Height*zoom);
+                    DrawThingGraphic(ghost,def,at,.65f);SelectionBorder(at);
                 }
             }
+            DrawStructureReferences();
+            if(showAux)DrawTriggerOverlay();
             if(showAux)foreach(var region in Map.Regions){
                 var box=new Rect(canvasOffset.x+region.Min.X*zoom,canvasOffset.y+(Map.Height-1-region.Max.Z)*zoom,(region.Max.X-region.Min.X+1)*zoom,(region.Max.Z-region.Min.Z+1)*zoom);
-                Widgets.DrawBoxSolid(box,new Color(.2f,.5f,.9f,.22f));Widgets.Label(box,region.Name);if(IsSelected(region.Id))SelectionBorder(box);
+                Widgets.DrawBoxSolid(box,new Color(.2f,.5f,.9f,.22f));EditorUI.DrawLabel(box,region.Name);if(IsSelected(region.Id))SelectionBorder(box);
             }
+            DrawSelectionBox();
+            DrawSurfaceStroke();
             // GUI group coordinates: require both the visible canvas and actual map bounds.
+            if(showAux)DrawStealthOverlay();
+            if(showAux)DrawInteractionOverlay();
             var mouse=localMouse;
-            bool selected=brush!=null||tool=="Pawn"||tool=="Marker"||tool=="Region"||tool=="Trigger"||Map.Objects.Any(p=>selection.Contains(p.Id)||p.Id==selectedId);
-            if(zoom>=6&&selected&&new Rect(0,0,r.width,r.height).Contains(mouse)&&size.Contains(mouse)) {
+            bool selected=brush!=null||tool=="Pawn"||tool=="Marker"||tool=="Region"||tool=="Trigger"||selection.Count>0||FindPlacement(selectedId)!=null;
+            if(zoom>=6&&selected&&!overMinimap&&!minimapDragging&&new Rect(0,0,r.width,r.height).Contains(mouse)&&size.Contains(mouse)) {
                 int cx=Mathf.FloorToInt((mouse.x-canvasOffset.x)/zoom),cy=Mathf.FloorToInt((mouse.y-canvasOffset.y)/zoom);
                 int minX=Math.Max(0,cx-4),maxX=Math.Min(Map.Width,cx+5),minY=Math.Max(0,cy-4),maxY=Math.Min(Map.Height,cy+5);
                 var tint=new Color(.8f,.88f,1f,.23f);
@@ -267,7 +269,9 @@ namespace RimCampaign.Editor
                 for(int y=minY;y<=maxY;y++)Widgets.DrawLine(new Vector2(canvasOffset.x+minX*zoom,canvasOffset.y+y*zoom),new Vector2(canvasOffset.x+maxX*zoom,canvasOffset.y+y*zoom),tint,1);
             }
             GUI.EndGroup();
-            MapInput(r);
+            }
+            bool minimapInput=DrawMinimap(minimap);
+            if(!minimapInput)MapInput(r);
         }
         bool IsSelected(string id)=>selection.Contains(id)||selectedId==id;
         static readonly Color SelectionColor=new Color(.2f,.95f,1f,1f);
@@ -285,10 +289,26 @@ namespace RimCampaign.Editor
             if(def==null)return p.Position.X==cell.X&&p.Position.Z==cell.Z;
             return GenAdj.OccupiedRect(new IntVec3(p.Position.X,0,p.Position.Z),new Rot4(p.Rotation),def.size).Contains(new IntVec3(cell.X,0,cell.Z));
         }
-        static Color TerrainColor(string name)=>name.IndexOf("Water",StringComparison.OrdinalIgnoreCase)>=0?new Color(.15f,.35f,.65f):name.IndexOf("Rock",StringComparison.OrdinalIgnoreCase)>=0?Color.gray:new Color(.45f,.37f,.22f);
+        static Color TerrainColor(string name)=>name=="Space"?Color.black:name.IndexOf("Sand",StringComparison.OrdinalIgnoreCase)>=0?new Color(.68f,.58f,.37f):name.IndexOf("Ice",StringComparison.OrdinalIgnoreCase)>=0?new Color(.8f,.86f,.9f):name=="SoilRich"?new Color(.29f,.25f,.17f):name.IndexOf("Water",StringComparison.OrdinalIgnoreCase)>=0?new Color(.15f,.35f,.65f):name.IndexOf("Rock",StringComparison.OrdinalIgnoreCase)>=0?Color.gray:new Color(.45f,.37f,.22f);
         Cell CellAt(Vector2 point,Rect r)=>new Cell{X=Mathf.FloorToInt((point.x-r.x-canvasOffset.x)/zoom),Z=Map.Height-1-Mathf.FloorToInt((point.y-r.y-canvasOffset.y)/zoom)};
         void MapInput(Rect r){
-            var e=Event.current;
+            if(!Application.isFocused)return;
+            HandleMapInput(r,Event.current);
+        }
+        void HandleMapInput(Rect r,Event e){
+            if(surfacePainting){
+                if((e.type==EventType.MouseUp||e.rawType==EventType.MouseUp)&&e.button==0){UpdateSurfaceStroke(CellAt(e.mousePosition,r));CommitSurfaceStroke();e.Use();}
+                else if(e.type==EventType.MouseDrag&&e.button==0){UpdateSurfaceStroke(CellAt(e.mousePosition,r));e.Use();}
+                else if(e.type==EventType.MouseDown&&e.button==1){CancelSurfaceStroke();e.Use();}
+                return;
+            }
+            if(boxSelecting){
+                boxEnd=CellAt(e.mousePosition,r);
+                if((e.type==EventType.MouseUp||e.rawType==EventType.MouseUp)&&e.button==0){SelectBox(boxStart,boxEnd);boxSelecting=false;e.Use();}
+                else if(e.type==EventType.MouseDown&&e.button==1){boxSelecting=false;e.Use();}
+                else if(e.type==EventType.MouseDrag){e.Use();}
+                return;
+            }
             if(painting) {
                 if((e.type==EventType.MouseUp||e.rawType==EventType.MouseUp)&&e.button==0){FinishPaint();e.Use();return;}
                 if(e.type==EventType.MouseDrag&&e.button==0){
@@ -318,31 +338,35 @@ namespace RimCampaign.Editor
             if(e.type==EventType.MouseDown&&(e.button==1||e.button==2)&&!dragging) {
                 panning=true;panMoved=false;panButton=e.button;panStart=panLast=e.mousePosition;e.Use();return;
             }
-            if(e.type==EventType.ScrollWheel){zoom=Mathf.Clamp(zoom-e.delta.y,2,32);e.Use();return;}
+            if(e.type==EventType.ScrollWheel){mapView.ZoomAt(e.delta.y,e.mousePosition.x-r.x,e.mousePosition.y-r.y);e.Use();return;}
             var cell=CellAt(e.mousePosition,r);
             if(e.type==EventType.MouseDown&&e.button==0&&cell.X>=0&&cell.Z>=0&&cell.X<Map.Width&&cell.Z<Map.Height){
-                if(tool=="Place"&&brush!=null){BeginPaint(brush,cell);e.Use();return;}
+                bool additive=(e.modifiers&EventModifiers.Shift)!=0;
+                EditorFocus.Release();
+                if(additive&&tool!="Region"){FinishPaint();tool="";brush=null;}
+                if(tool=="PatrolPoint"){AddPatrolPoint(cell);e.Use();return;}
+                if(tool=="Place"&&brush!=null){if(SurfaceTool(brush))BeginSurfaceStroke(brush,cell);else BeginPaint(brush,cell);e.Use();return;}
                 if(tool=="Pawn"||tool=="Marker"){
                     BeginPaint(new Placement{Name=tool,Kind=tool,Role=tool=="Pawn"?Map.Roles.FirstOrDefault()??"hero":"",Layer="Auxiliary"},cell);e.Use();return;
                 }
                 if(tool=="Trigger"){AddTrigger(cell);e.Use();return;}
                 if(tool=="Region"){origin=cell;dragging=true;dragStart=e.mousePosition;e.Use();return;}
-                var hit=Map.Objects.LastOrDefault(p=>HitPlacement(p,cell)&&(!lockAux||p.Layer!="Auxiliary"));
+                var hit=PickEditable(cell);
                 if(hit!=null){
-                    if(!e.shift&&!selection.Contains(hit.Id))selection.Clear();selection.Add(hit.Id);selectedId=hit.Id;
-                    if(e.clickCount==2){EditObject(hit);e.Use();return;}
-                    origin=cell;dragging=true;dragSnapshot=Json.Write(Project);originalPositions=Map.Objects.Where(p=>selection.Contains(p.Id)).ToDictionary(p=>p.Id,p=>Json.Copy(p.Position));
-                }else{selection.Clear();selectedId="";}
+                    SelectPlacement(hit,additive);
+                    if(e.clickCount==2&&!additive&&selection.Count==1){InspectSelection(hit.Id);e.Use();return;}
+                    BeginSelectionMove(cell);
+                }else{
+                    if(!additive){selection.Clear();selectedId="";}
+                    boxSelecting=true;boxStart=boxEnd=cell;
+                }
                 e.Use();
             }else if(e.type==EventType.MouseDrag&&e.button==0&&dragging&&tool!="Region"){
-                foreach(var p in Map.Objects.Where(p=>originalPositions.ContainsKey(p.Id))){var o=originalPositions[p.Id];p.Position.X=Mathf.Clamp(o.X+cell.X-origin.X,0,Map.Width-1);p.Position.Z=Mathf.Clamp(o.Z+cell.Z-origin.Z,0,Map.Height-1);}e.Use();
-            }else if(e.type==EventType.MouseUp&&e.button==0&&dragging){
+                PreviewSelectionMove(cell);e.Use();
+            }else if((e.type==EventType.MouseUp||e.rawType==EventType.MouseUp)&&e.button==0&&dragging){
                 dragging=false;
-                if(tool=="Region")Edit(_=>Map.Regions.Add(new Region{Name="区域",Min=new Cell{X=Math.Max(0,Math.Min(origin.X,cell.X)),Z=Math.Max(0,Math.Min(origin.Z,cell.Z))},Max=new Cell{X=Math.Min(Map.Width-1,Math.Max(origin.X,cell.X)),Z=Math.Min(Map.Height-1,Math.Max(origin.Z,cell.Z))}}));
-                else {var positions=Map.Objects.Where(p=>originalPositions.ContainsKey(p.Id)).ToDictionary(p=>p.Id,p=>Json.Copy(p.Position));
-                    foreach(var p in Map.Objects.Where(p=>originalPositions.ContainsKey(p.Id)))p.Position=originalPositions[p.Id];
-                    Edit(_=>{foreach(var p in Map.Objects.Where(p=>positions.ContainsKey(p.Id)))p.Position=positions[p.Id];});
-                }e.Use();
+                if(tool=="Region")Edit(_=>Map.Regions.Add(new Region{Name=RimCampaign.Runtime.RcText.T("区域"),Min=new Cell{X=Math.Max(0,Math.Min(origin.X,cell.X)),Z=Math.Max(0,Math.Min(origin.Z,cell.Z))},Max=new Cell{X=Math.Min(Map.Width-1,Math.Max(origin.X,cell.X)),Z=Math.Min(Map.Height-1,Math.Max(origin.Z,cell.Z))}}));
+                else FinishSelectionMove();e.Use();
             }
         }
         void BeginPaint(Placement template,Cell cell) {
@@ -352,7 +376,13 @@ namespace RimCampaign.Editor
             if(!painting)return;
             painting=false;history.CommitAppliedChange(paintSnapshot);paintSnapshot=null;paintBrush=null;paintLast=null;painted.Clear();
         }
-        public override void PostClose(){FinishPaint();base.PostClose();}
+        void CancelPointerGestures(){
+            FinishPaint();CancelSurfaceStroke();
+            if(dragging&&tool!="Region")foreach(var pair in originalPositions)SetEditablePosition(pair.Key,Json.Copy(pair.Value));
+            originalPositions.Clear();dragging=false;selectionMoved=false;toggleOnRelease=null;boxSelecting=false;panning=false;minimapDragging=false;dragLeft=dragRight=false;
+            InvalidateScene();GUIUtility.hotControl=0;EditorFocus.Release();
+        }
+        public override void PostClose(){FinishPaint();CancelSurfaceStroke();if(dragging&&tool!="Region")FinishSelectionMove();if(terrainPreview!=null)UnityEngine.Object.Destroy(terrainPreview);if(minimapTexture!=null)UnityEngine.Object.Destroy(minimapTexture);terrainPreview=null;minimapTexture=null;InvalidateScene();minimapRevision=-1;base.PostClose();}
         void PaintTo(Cell target) {
             int x=Mathf.Clamp(target.X,0,Map.Width-1),z=Mathf.Clamp(target.Z,0,Map.Height-1);
             int startX=paintLast?.X??x,startZ=paintLast?.Z??z;
@@ -366,77 +396,103 @@ namespace RimCampaign.Editor
         void PaintCell(Cell cell) {
             if(!painted.Add(cell.Z*Map.Width+cell.X))return;
             var p=paintBrush;
-            if(Map.Objects.Any(o=>o.Kind==p.Kind&&o.Position.X==cell.X&&o.Position.Z==cell.Z&&o.Def?.Name==p.Def?.Name&&o.Rotation==p.Rotation&&o.Faction==p.Faction&&o.Boss==p.Boss&&o.Role==p.Role&&o.Stuff?.Name==p.Stuff?.Name))return;
+            if(SurfaceTool(p)){TerrainSurfaces.Apply(Map,p,new[]{cell});InvalidateScene();return;}
+            if(p.Kind=="EraseRoof"){
+                TerrainInitializer.EraseSurface(Map,cell,true);InvalidateScene();return;
+            }
+            if(Map.Objects.Any(o=>!TerrainInitializer.Generated(o)&&o.Kind==p.Kind&&o.Position.X==cell.X&&o.Position.Z==cell.Z&&o.Def?.Name==p.Def?.Name&&o.Rotation==p.Rotation&&o.Faction==p.Faction&&o.Boss==p.Boss&&o.Role==p.Role&&o.Stuff?.Name==p.Stuff?.Name))return;
             var def=p.Kind=="Thing"?DefDatabase<ThingDef>.GetNamedSilentFail(p.Def.Name):null;
             if(def!=null) {
                 var bounds=GenAdj.OccupiedRect(new IntVec3(cell.X,0,cell.Z),new Rot4(p.Rotation),def.size);
                 if(bounds.minX<0||bounds.minZ<0||bounds.maxX>=Map.Width||bounds.maxZ>=Map.Height)return;
                 if(def.category==ThingCategory.Building)foreach(var other in Map.Objects.Where(o=>o.Kind=="Thing")) {
-                    var otherDef=DefDatabase<ThingDef>.GetNamedSilentFail(other.Def.Name);if(otherDef?.category!=ThingCategory.Building)continue;
+                    var otherDef=DefDatabase<ThingDef>.GetNamedSilentFail(other.Def.Name);if(otherDef?.category!=ThingCategory.Building||TerrainInitializer.NaturalObject(other))continue;
                     var occupied=GenAdj.OccupiedRect(new IntVec3(other.Position.X,0,other.Position.Z),new Rot4(other.Rotation),otherDef.size);
-                    if(bounds.minX<=occupied.maxX&&bounds.maxX>=occupied.minX&&bounds.minZ<=occupied.maxZ&&bounds.maxZ>=occupied.minZ)return;
+                    if(bounds.minX<=occupied.maxX&&bounds.maxX>=occupied.minX&&bounds.minZ<=occupied.maxZ&&bounds.maxZ>=occupied.minZ&&!CanShareBuildingCell(def,otherDef))return;
                 }
             }
             var placed=Json.Copy(p);placed.Id=Guid.NewGuid().ToString("N");placed.Position=cell;
-            if(p.Kind=="Terrain"||p.Kind=="Roof")Map.Objects.RemoveAll(o=>o.Kind==p.Kind&&o.Position.X==cell.X&&o.Position.Z==cell.Z);
+            if(def!=null)PlacementGraphics.FixNewPlacement(placed,def);
+            if(p.Kind=="Terrain"||p.Kind=="Roof")Map.Objects.RemoveAll(o=>o.Layer!=TerrainInitializer.Layer&&o.Kind==p.Kind&&o.Position.X==cell.X&&o.Position.Z==cell.Z);
+            if(placed.Kind!="Roof"&&!TerrainInitializer.NaturalObject(placed))TerrainInitializer.ClearNatureAt(Map,TerrainInitializer.Footprint(placed));
             Map.Objects.Add(placed);selectedId=placed.Id;
+            InvalidateScene();
+            var deviceKind=DeviceSpec.KindForDef(placed.Def?.Name);
+            if(deviceKind!=null)Map.Stealth.Devices.Add(new DeviceSpec{Name=placed.Name,Kind=deviceKind,Host=placed.Id,Position=StealthMath.Copy(cell),Facing=placed.Rotation});
         }
         void AddTrigger(Cell cell){
-            var rule=new Rule{Name="触发器 "+(Map.Rules.Count+1)};
-            // Trigger locations are editor layout metadata, not an additional runtime entity.
-            rule.Position=cell;Edit(_=>Map.Rules.Add(rule));selectedId=rule.Id;EditObject(rule);
+            var rule=new Rule{Name=RimCampaign.Runtime.RcText.T("空间触发器 ")+(Map.Rules.Count+1),Position=Json.Copy(cell),Events=new List<EventSpec>{new EventSpec{Kind="RangeEnter"}}};
+            Edit(_=>Map.Rules.Add(rule));selection.Clear();selection.Add(rule.Id);selectedId=rule.Id;tool="";brush=null;
+            status=RimCampaign.Runtime.RcText.T("触发器已放置；拖动移动，在右侧配置范围、检测对象与动作。");
         }
-        void Copy(){clipboard=Json.Copy(Map.Objects.Where(p=>selection.Contains(p.Id)).ToList());status="已复制 "+clipboard.Count+" 个对象";}
-        void Paste(){Edit(_=>{var copy=History<Project>.CopyObjects(clipboard,1,1);Map.Objects.AddRange(copy);selection=new HashSet<string>(copy.Select(p=>p.Id));});}
+        List<Rule> ruleClipboard=new List<Rule>();
+        void Copy(){clipboard=Json.Copy(SelectedPlacements());ruleClipboard=Json.Copy(Map.Rules.Where(p=>IsSelected(p.Id)).ToList());status=RimCampaign.Runtime.RcText.T("已复制 ")+(clipboard.Count+ruleClipboard.Count)+RimCampaign.Runtime.RcText.T(" 个对象");}
+        static bool CanShareBuildingCell(ThingDef first,ThingDef second)=>
+            (first.building?.isPowerConduit==true||second.building?.isPowerConduit==true)&&
+            GenConstruct.CanPlaceBlueprintOver(first,second)&&GenConstruct.CanPlaceBlueprintOver(second,first)&&
+            !GenSpawn.SpawningWipes(first,second)&&!GenSpawn.SpawningWipes(second,first);
+        void Paste(){
+            var copies=History<Project>.CopyObjects(clipboard,1,1);var rules=ruleClipboard.Select(r=>TriggerGeometry.Copy(r,1,1)).ToList();
+            if(copies.Select(PlacementBounds).Any(b=>b.minX<0||b.minZ<0||b.maxX>=Map.Width||b.maxZ>=Map.Height)||rules.Any(r=>r.Position.X>=Map.Width||r.Position.Z>=Map.Height)){status=RimCampaign.Runtime.RcText.T("粘贴会超出地图边界，请先移动原对象。");return;}
+            var ids=clipboard.Select((o,i)=>new {o.Id,Next=copies[i].Id}).Concat(ruleClipboard.Select((o,i)=>new{o.Id,Next=rules[i].Id})).ToDictionary(x=>x.Id,x=>x.Next);
+            foreach(var rule in rules){if(ids.ContainsKey(rule.Host))rule.Host=ids[rule.Host];if(ids.ContainsKey(rule.Subject))rule.Subject=ids[rule.Subject];foreach(var e in rule.Events)if(ids.ContainsKey(e.Target))e.Target=ids[e.Target];foreach(var a in Validation.Actions(rule.Actions))if(ids.ContainsKey(a.Target))a.Target=ids[a.Target];}
+            EditPlacements(copies,rules.Select(r=>r.Id),()=>{Map.Objects.AddRange(copies);Map.Rules.AddRange(rules);selection=new HashSet<string>(copies.Select(p=>p.Id).Concat(rules.Select(p=>p.Id)));selectedId=selection.LastOrDefault()??"";},true);
+        }
         void Delete(){
             var ids=selection.Count>0?selection:new HashSet<string>{selectedId};
             var uses=Validation.Actions(Map.Rules.SelectMany(x=>x.Actions).Concat(Map.Entry).Concat(Map.Defeat)).Where(a=>ids.Contains(a.Target)||ids.Contains(a.Text)).Select(a=>EditorUI.Label(a)).ToList();
-            Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("删除所选对象？引用将需要重新绑定。\n"+string.Join("\n",uses),()=>Edit(_=>{
+            Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(RimCampaign.Runtime.RcText.T("删除所选对象？引用将需要重新绑定。\n")+string.Join("\n",uses),()=>RemoveSelection(ids)));
+        }
+        void RemoveSelection(HashSet<string> ids){Edit(_=>{
+                RemovePatrolReferences(ids);
+                Map.Entry.RemoveAll(a=>a.Kind=="rc.spawnStructure"&&ids.Contains(a.Origin));
                 Map.Objects.RemoveAll(o=>ids.Contains(o.Id));Map.Rules.RemoveAll(o=>ids.Contains(o.Id));Map.Regions.RemoveAll(o=>ids.Contains(o.Id));Map.Objectives.RemoveAll(o=>ids.Contains(o.Id));Map.Hud.RemoveAll(o=>ids.Contains(o.Id));selection.Clear();selectedId="";
-            })));
+                Map.Interactions.RemoveAll(o=>ids.Contains(o.Id)||ids.Contains(o.Host));
+            });
         }
         void HandleKeys(){
-            var e=Event.current;if(e.type!=EventType.KeyDown)return;
+            var e=Event.current;if(e.type!=EventType.KeyDown||EditorFocus.Typing)return;
+            if(surfacePainting){if(e.keyCode==KeyCode.Escape){CancelSurfaceStroke();e.Use();}return;}
             FinishPaint();
+            if(dragging&&tool!="Region")FinishSelectionMove();
+            if(boxSelecting){if(e.keyCode==KeyCode.Escape){boxSelecting=false;e.Use();}return;}
             if(e.control&&e.keyCode==KeyCode.S){Save();e.Use();}
-            if(e.control&&e.keyCode==KeyCode.Z){history.Undo();e.Use();}
-            if(e.control&&e.keyCode==KeyCode.Y){history.Redo();e.Use();}
+            if(e.control&&e.keyCode==KeyCode.Z){UndoEdit(false);e.Use();}
+            if(e.control&&e.keyCode==KeyCode.Y){UndoEdit(true);e.Use();}
             if(e.control&&e.keyCode==KeyCode.C){Copy();e.Use();}
             if(e.control&&e.keyCode==KeyCode.V){Paste();e.Use();}
             if(e.keyCode==KeyCode.Delete){Delete();e.Use();}
-            if(e.keyCode==KeyCode.R){Edit(_=>{foreach(var p in Map.Objects.Where(p=>selection.Contains(p.Id)))p.Rotation=(p.Rotation+1)%4;});e.Use();}
+            if(e.keyCode==KeyCode.R){if(brush!=null)brush.Rotation=(brush.Rotation+1)%4;else RotateSelection(e.shift);e.Use();}
         }
         void Resize(Rect r,Rect center){
+            if(!Application.isFocused)return;
             var e=Event.current;
-            var l=new Rect(left,84,7,r.height-120);var rr=new Rect(r.width-right-7,84,7,r.height-120);
+            var l=new Rect(left,84,7,r.height-118);var rr=new Rect(r.width-right-7,84,7,r.height-118);
             if(e.type==EventType.MouseDown&&e.button==0){dragLeft=leftOpen&&l.Contains(e.mousePosition);dragRight=rightOpen&&rr.Contains(e.mousePosition);}
             if(e.type==EventType.MouseDrag){if(dragLeft){left=Mathf.Clamp(e.mousePosition.x,160,r.width*.35f);e.Use();}if(dragRight){right=Mathf.Clamp(r.width-e.mousePosition.x,190,r.width*.4f);e.Use();}}
             if(e.type==EventType.MouseUp){dragLeft=dragRight=false;}
         }
-        void GenerateBase(){
-            Prompt("生成种子", "12345",seed=>Edit(_=>{
-                Map.Base="Generated";Map.Objects.RemoveAll(p=>p.Kind=="Terrain");
-                int hash=17;foreach(char c in seed)hash=hash*31+c;var random=new System.Random(hash);
-                var soil=DefDatabase<TerrainDef>.GetNamed("Soil");var gravel=DefDatabase<TerrainDef>.GetNamedSilentFail("Gravel")??soil;
-                for(int z=0;z<Map.Height;z++)for(int x=0;x<Map.Width;x++)if(random.NextDouble()<.17)Map.Objects.Add(new Placement{Kind="Terrain",Name=gravel.label,Def=Profiles.Ref(gravel),Position=new Cell{X=x,Z=z},Layer="Terrain"});
-            }));
-        }
+        void GenerateBase()=>Find.WindowStack.Add(new TerrainInitializationWindow(Map.TerrainInitialization,settings=>{
+            Edit(_=>TerrainInitializer.Initialize(Map,settings));
+            selection.Clear();selectedId="";patrolRoute="";tool="";brush=null;
+            status=RimCampaign.Runtime.RcText.T("旧布置已清空，地形、植被与山体已初始化。可撤销恢复。");
+        }));
         string graphNode="";bool nodeDragging;Vector2 nodeStart,mouseStart;
         void DrawGraph(Rect r){
-            if(Project.Campaigns.Count==0){if(Widgets.ButtonText(r,"创建战役"))Edit(p=>p.Campaigns.Add(new Campaign{Name=p.Name}));return;}
+            if(Project.Campaigns.Count==0){if(EditorUI.Button(r,RimCampaign.Runtime.RcText.T("创建战役")))Edit(p=>p.Campaigns.Add(new Campaign{Name=p.Name}));return;}
             var c=Project.Campaigns[0];Widgets.DrawBoxSolid(r,new Color(.09f,.11f,.13f));GUI.BeginGroup(r);
-            if(Widgets.ButtonText(new Rect(0,0,100,30),"+ 关卡"))Edit(_=>{var n=new Node{Name="关卡 "+(c.Nodes.Count+1),Map=mapId,X=50+c.Nodes.Count*35,Y=80+c.Nodes.Count*35};c.Nodes.Add(n);if(c.Start=="")c.Start=n.Id;});
-            if(Widgets.ButtonText(new Rect(105,0,100,30),"+ 连接"))Find.WindowStack.Add(new ObjectWindow(new Edge{From=graphNode},o=>Edit(_=>c.Edges.Add((Edge)o)),Project));
-            if(Widgets.ButtonText(new Rect(210,0,120,30),"战役设置"))Find.WindowStack.Add(new ObjectWindow(c,o=>Edit(p=>p.Campaigns[0]=(Campaign)o),Project));
+            if(EditorUI.Button(new Rect(0,0,100,30),RimCampaign.Runtime.RcText.T("+ 关卡")))Edit(_=>{var n=new Node{Name=RimCampaign.Runtime.RcText.T("关卡 ")+(c.Nodes.Count+1),Map=mapId,X=50+c.Nodes.Count*35,Y=80+c.Nodes.Count*35};c.Nodes.Add(n);if(c.Start=="")c.Start=n.Id;});
+            if(EditorUI.Button(new Rect(105,0,100,30),RimCampaign.Runtime.RcText.T("+ 连接")))Find.WindowStack.Add(new ObjectWindow(new Edge{From=graphNode},o=>Edit(_=>c.Edges.Add((Edge)o)),Project));
+            if(EditorUI.Button(new Rect(210,0,120,30),RimCampaign.Runtime.RcText.T("战役设置")))Find.WindowStack.Add(new ObjectWindow(c,o=>Edit(p=>p.Campaigns[0]=(Campaign)o),Project));
             foreach(var edge in c.Edges){
                 var from=c.Nodes.FirstOrDefault(n=>n.Id==edge.From);var to=c.Nodes.FirstOrDefault(n=>n.Id==edge.To);if(from==null||to==null)continue;
                 var a=new Vector2(from.X+160,from.Y+35)+graphOffset;var b=new Vector2(to.X,to.Y+35)+graphOffset;
                 Widgets.DrawLine(a,b,Color.gray,2);
-                if(Widgets.ButtonText(new Rect((a.x+b.x)/2-65,(a.y+b.y)/2-13,130,26),edge.Result+" / "+edge.When.Op))Find.WindowStack.Add(new ObjectWindow(edge,o=>Edit(_=>c.Edges[c.Edges.IndexOf(edge)]=(Edge)o),Project));
+                if(EditorUI.Button(new Rect((a.x+b.x)/2-65,(a.y+b.y)/2-13,130,26),edge.Result+" / "+edge.When.Op))Find.WindowStack.Add(new ObjectWindow(edge,o=>Edit(_=>c.Edges[c.Edges.IndexOf(edge)]=(Edge)o),Project));
             }
             foreach(var n in c.Nodes){
                 var box=new Rect(n.X+graphOffset.x,n.Y+graphOffset.y,160,72);Widgets.DrawWindowBackground(box);
-                Widgets.Label(box.ContractedBy(5),(c.Start==n.Id?"▶ ":"")+n.Name+"\n"+n.Kind);
+                EditorUI.DrawLabel(box.ContractedBy(5),(c.Start==n.Id?"▶ ":"")+n.Name+"\n"+n.Kind);
                 var e=Event.current;
                 if(e.type==EventType.MouseDown&&box.Contains(e.mousePosition)){
                     graphNode=n.Id;
@@ -461,24 +517,25 @@ namespace RimCampaign.Editor
             doCloseX=true;absorbInputAroundWindow=true;forcePause=true;
         }
         public override void DoWindowContents(Rect r) {
-            Widgets.Label(new Rect(0,0,r.width-40,32),"地图尺寸（格）");
-            Widgets.Label(new Rect(0,44,60,32),"宽 X");width=Widgets.TextField(new Rect(65,44,130,32),width);
-            Widgets.Label(new Rect(235,44,60,32),"高 Z");height=Widgets.TextField(new Rect(300,44,130,32),height);
-            Widgets.Label(new Rect(0,92,r.width,62),"范围：20–500。已有内容保持原坐标。\n缩小前请移走边界外的内容；修改支持撤销。");
-            Widgets.Label(new Rect(0,158,r.width,85),error);
-            if(Widgets.ButtonText(new Rect(0,r.height-38,r.width,36),"应用尺寸")) {
-                if(!int.TryParse(width,out int w)||!int.TryParse(height,out int h))error="请输入整数。";
+            EditorUI.DrawLabel(new Rect(0,0,r.width-40,32),RimCampaign.Runtime.RcText.T("地图尺寸（格）"));
+            EditorUI.DrawLabel(new Rect(0,44,60,32),RimCampaign.Runtime.RcText.T("宽 X"));width=Widgets.TextField(new Rect(65,44,130,32),width);
+            EditorUI.DrawLabel(new Rect(235,44,60,32),RimCampaign.Runtime.RcText.T("高 Z"));height=Widgets.TextField(new Rect(300,44,130,32),height);
+            EditorUI.DrawLabel(new Rect(0,92,r.width,62),RimCampaign.Runtime.RcText.T("范围：20–500。已有内容保持原坐标。\n缩小前请移走边界外的内容；修改支持撤销。"));
+            EditorUI.DrawLabel(new Rect(0,158,r.width,85),error);
+            if(EditorUI.Button(new Rect(0,r.height-38,r.width,36),RimCampaign.Runtime.RcText.T("应用尺寸"))) {
+                if(!int.TryParse(width,out int w)||!int.TryParse(height,out int h))error=RimCampaign.Runtime.RcText.T("请输入整数。");
                 else {error=apply(w,h)??"";if(error=="")Close();}
             }
         }
     }
     public class TextPrompt : Window
     {
-        readonly string title;string value;readonly Action<string> done;public override Vector2 InitialSize=>new Vector2(760,180);
+        readonly string title;string value,error="";readonly Action<string> done;public override Vector2 InitialSize=>new Vector2(760,310);
         public TextPrompt(string title,string value,Action<string> done){this.title=title;this.value=value;this.done=done;doCloseX=true;absorbInputAroundWindow=true;}
         public override void DoWindowContents(Rect r){
-            Widgets.Label(new Rect(0,0,r.width,30),title);value=Widgets.TextField(new Rect(0,40,r.width,32),value);
-            if(Widgets.ButtonText(new Rect(0,90,r.width,35),"确认")){try{done(value);Close();}catch(Exception ex){EditorUI.Error(ex);}}
+            EditorUI.DrawLabel(new Rect(0,0,r.width,30),title);value=Widgets.TextField(new Rect(0,40,r.width,32),value);
+            EditorUI.DrawLabel(new Rect(0,82,r.width,135),error);
+            if(EditorUI.Button(new Rect(0,r.height-40,r.width,35),RimCampaign.Runtime.RcText.T("确认"))){try{done(value);Close();}catch(Exception ex){error=ex.Message;}}
         }
     }
     public class ActionsWindow : ListWindow

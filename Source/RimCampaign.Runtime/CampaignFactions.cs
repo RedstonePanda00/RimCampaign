@@ -37,7 +37,7 @@ namespace RimCampaign.Runtime
                 string key=map.Id+"/"+team.Id;
                 if(factions.TryGetValue(key,out var existing)&&existing!=null)continue;
                 var faction=FactionGenerator.NewGeneratedFaction(new FactionGeneratorParms(DefDatabase<FactionDef>.GetNamed("RC_MapFaction")));
-                faction.Name=team.Name;
+                faction.Name=RcText.T(team.Name);
                 // No settlements, raids or diplomacy changes between existing world factions.
                 foreach(var other in Find.FactionManager.AllFactionsListForReading)
                     faction.SetRelation(new FactionRelation(other,FactionRelationKind.Neutral){baseGoodwill=0});

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../RimCampaign.Runtime/RimCampaign.Runtime.csproj" />
+    <Reference Include="ProtossMech"><HintPath>$(RimWorldDir)\Mods\ProtossMechCore\1.7\Assemblies\ProtossMech.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GunSmithFramework"><HintPath>$(RimWorldDir)\Mods\ProtossMechCore\1.7\Assemblies\GunSmithFramework.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

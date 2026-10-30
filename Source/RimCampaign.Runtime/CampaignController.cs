@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +16,8 @@ namespace RimCampaign.Runtime
 {
     public partial class CampaignController : GameComponent, IHost, IConditionHost
     {
+        // Runs once on new node map entry, before its checkpoint; never on save reload.
+        public static event Action<CampaignController> NodeInitialized;
         public Project Project; public string CampaignId="", NodeId="", Checkpoint="";
         public Map Map; public bool Starting, Transitioning, EntryPending;
         public Dictionary<string,Pawn> Actors=new Dictionary<string,Pawn>();
@@ -39,16 +41,20 @@ namespace RimCampaign.Runtime
         public Node Node=>Campaign?.Nodes.FirstOrDefault(n=>n.Id==NodeId);
         public MapSpec MapSpec=>Project?.Maps.FirstOrDefault(m=>m.Id==Node?.Map) ?? new MapSpec { Id="RC_Open_"+NodeId,Roles=new List<string>() };
         public bool Active=>Project!=null;
+        public bool StoryActive=>Active&&Node?.Kind=="Story";
         static IEnumerable<Act> ActiveActions(Fiber f) {
             if(f.Done)yield break;
+            if(f.Steps[f.Index].Kind=="Cinematic")yield return f.Steps[f.Index];
             if(f.Children.Count>0) {foreach(var child in f.Children)foreach(var a in ActiveActions(child))yield return a;}
             else yield return f.Steps[f.Index];
         }
-        public bool Presentation=>Active&&(Transitioning || State.Phase=="Failing" || State.Fibers.SelectMany(ActiveActions).Any(a=>new[]{"Fade","Camera","Move","Dialogue","Subtitle","Sound"}.Contains(a.Kind)||a.Freeze));
-        public bool Freeze=>Active&&(Transitioning || EntryPending || State.Phase=="Failing" || State.Phase=="Defeated" || State.Phase=="Succeeded" || State.Fibers.SelectMany(ActiveActions).Any(a=>a.Freeze));
+        public bool Presentation=>Active&&(Cinematic || Transitioning || State.Phase=="Failing" || State.Fibers.SelectMany(ActiveActions).Any(a=>new[]{"Fade","Camera","Move","Dialogue","Subtitle","Sound"}.Contains(a.Kind)||a.Freeze));
+        public bool Freeze=>Active&&(!MapMission||(State.Phase!="Succeeded"&&State.Phase!="Defeated"))&&(Transitioning || EntryPending || State.Phase=="Failing" || State.Phase=="Defeated" || State.Phase=="Succeeded" || State.Fibers.SelectMany(ActiveActions).Any(a=>a.Freeze));
         public void Prepare(CampaignDef def) {
-            Project=def.LoadProject();CampaignId=def.campaignId;NodeId=Campaign.Start;
-            if(Node.Kind=="Open")throw new InvalidOperationException("First node must be a story map.");
+            Prepare(def.LoadProject(),def.campaignId);
+        }
+        public void Prepare(Project project,string campaignId,string startNode=null) {
+            Project=project;CampaignId=campaignId;NodeId=startNode??Campaign.Start;
             CampaignVariables=new Dictionary<string,double>(Campaign.Variables);
             BindActors(); Starting=true;Transitioning=true;black=1;
         }
@@ -67,15 +73,17 @@ namespace RimCampaign.Runtime
             }
         }
         public Thing Place(Placement p,Map map) {
+            State?.Variables.Remove("destroyed-placement:"+p.Id);
             var cell=new IntVec3(p.Position.X,0,p.Position.Z);
             if(!cell.InBounds(map))throw new InvalidOperationException("Placement out of bounds: "+p.Name);
             if(p.Kind=="Pawn") {
                 if(!Actors.TryGetValue(p.Role,out var actor)||actor.Dead)return null;
                 if(actor.Spawned)return actor;
-                actor.SetFaction(Current.Game.GetComponent<CampaignFactionRegistry>().Resolve(MapSpec,p.Faction));
+                var faction=Current.Game.GetComponent<CampaignFactionRegistry>().Resolve(MapSpec,p.Faction);
+                if(actor.Faction!=faction)actor.SetFaction(faction);
                 GenSpawn.Spawn(actor,cell,map,new Rot4(p.Rotation));Objects[p.Id]=actor;return actor;
             }
-            if(p.Kind=="Terrain"){map.terrainGrid.SetTerrain(cell,DefDatabase<TerrainDef>.GetNamed(p.Def.Name));return null;}
+            if(p.Kind=="Terrain"){TerrainSurfaces.Place(map,cell,DefDatabase<TerrainDef>.GetNamed(p.Def.Name));return null;}
             if(p.Kind=="Roof"){map.roofGrid.SetRoof(cell,string.IsNullOrEmpty(p.Def.Name)?null:DefDatabase<RoofDef>.GetNamed(p.Def.Name));return null;}
             if(p.Kind=="Boss") {
                 var template=Project.Bosses.Single(b=>b.Id==p.Boss);
@@ -92,10 +100,12 @@ namespace RimCampaign.Runtime
                 GenSpawn.Spawn(generated,cell,map,new Rot4(p.Rotation));Objects[p.Id]=generated;return generated;
             }
             var def=DefDatabase<ThingDef>.GetNamed(p.Def.Name);
-            var thing=ThingMaker.MakeThing(def,p.Stuff==null?GenStuff.DefaultStuffFor(def):DefDatabase<ThingDef>.GetNamed(p.Stuff.Name));
+            PlacementStorage.Validate(p);
+            var thing=CampaignItems.Make(def,PlacementStorage.StuffFor(def,p.Stuff),p.Book);
+            PlacementGraphics.Apply(p,thing);
             thing.stackCount=Math.Min(Math.Max(1,p.Count),def.stackLimit);
             if(thing.def.CanHaveFaction)thing.SetFaction(Current.Game.GetComponent<CampaignFactionRegistry>().Resolve(MapSpec,p.Faction));
-            GenSpawn.Spawn(thing,cell,map,new Rot4(p.Rotation));Objects[p.Id]=thing;return thing;
+            GenSpawn.Spawn(thing,cell,map,new Rot4(p.Rotation));PlacementStorage.Populate(thing,p);if(thing is Plant plant&&p.Layer==TerrainInitializer.NatureLayer)plant.Growth=.75f+(float)TerrainNoise.Sample(cell.x,cell.z,37)*.25f;Objects[p.Id]=thing;return thing;
         }
         void Populate() {
             foreach(var role in Actors) {
@@ -130,6 +140,8 @@ namespace RimCampaign.Runtime
             Map.Parent.SetFaction(Faction.OfPlayer);
             Current.Game.CurrentMap=Map;Find.World.renderer.wantedMode=WorldRenderMode.None;
             Find.CameraDriver.JumpToCurrentMapLoc(Map.Center);Find.CameraDriver.ResetSize();
+            GenerateMapRewards();
+            CampaignMapModules.Apply(this);
         }
         internal static IntVec3 OpenArrivalCell(IntVec3 desired,Map map) {
             if(!desired.InBounds(map))desired=map.Center;
@@ -146,15 +158,17 @@ namespace RimCampaign.Runtime
         }
         public override void StartedNewGame() {
             if(!Active)return;Starting=false;
+            if(Node.Kind=="Open")Map=Find.CurrentMap;
             Populate();
             // Vanilla initialization creates a starting settlement; the campaign starts in its pocket map.
             foreach(var settlement in Find.WorldObjects.Settlements.Where(s=>s.Faction==Faction.OfPlayer&&!s.HasMap).ToList())Find.WorldObjects.Remove(settlement);
+            if(Node.Kind=="Open")NodeInitialized?.Invoke(this);
             LongEventHandler.ExecuteWhenFinished(CreateCheckpoint);
         }
         void CreateCheckpoint() {
             try {
-                RestoreControl();State=new RunState();Observed.Clear();engine=new Engine(MapSpec,State,this);
-                progress.Clear();openDialogs.Clear();acknowledgements.Clear();failureShown=terminalHandled=nativeVictoryPending=settling=false;gameDelta=0;
+                RestoreControl();State=new RunState();Result=null;EndingText="";Observed.Clear();engine=new Engine(MapSpec,State,this);
+                Communications.Messages.Clear();progress.Clear();openDialogs.Clear();acknowledgements.Clear();failureShown=terminalHandled=nativeVictoryPending=settling=false;gameDelta=0;
                 EntryPending=true;Transitioning=false;Checkpoint="RimCampaign-"+Guid.NewGuid().ToString("N");
                 checkpointWriting=true;
                 try{GameDataSaveLoader.SaveGame(Checkpoint);}finally{checkpointWriting=false;}
@@ -164,8 +178,12 @@ namespace RimCampaign.Runtime
             }catch(Exception ex){StopWithError(ex);}
         }
         void StartEntry() {
+            // A result/failure window pauses the previous node. Do not inherit that pause
+            // into this node's cinematic control snapshot or first spatial-trigger tick.
+            Find.TickManager.CurTimeSpeed=TimeSpeed.Normal;
             EntryPending=false;Transitioning=false;black=0;engine=new Engine(MapSpec,State,this);engine.Start();
             foreach(var input in Node.Inputs)State.Variables[input.Key]=input.Value;
+            if(Node.OpeningTitle?.ManualStart!=true)BeginOpeningTitle();
         }
         public override void LoadedGame() {
             if(!Active)return;engine=new Engine(MapSpec,State,this);
@@ -173,9 +191,18 @@ namespace RimCampaign.Runtime
             else if(Transitioning)LongEventHandler.ExecuteWhenFinished(BeginTransition);
         }
         public override void ExposeData() {
+            // Destroyed objects are not written as live Thing references. Preserve
+            // their result so a partially cleared encounter remains clear on load.
+            if(Scribe.mode==LoadSaveMode.Saving)
+                foreach(var pair in Objects)if(pair.Value?.Destroyed==true||pair.Value is Pawn dead&&dead.Dead)State.Variables["destroyed-placement:"+pair.Key]=1;
+            Scribe_Collections.Look(ref RewardStocks,"rcMapRewardStocks",LookMode.Deep);
+            ExposeStory();
+            ExposeResult();
+            ExposeCommunications();
+            ExposeOpeningTitle();
             string project=Project==null?null:Json.Write(Project),state=Json.Write(State),variables=Json.Write(CampaignVariables),observed=Json.Write(Observed);
-            Scribe_Values.Look(ref project,"rcProject");Scribe_Values.Look(ref state,"rcState");
-            Scribe_Values.Look(ref variables,"rcVariables");Scribe_Values.Look(ref observed,"rcObserved");
+            ScribeJson.Look(ref project,"rcProject");ScribeJson.Look(ref state,"rcState");
+            ScribeJson.Look(ref variables,"rcVariables");ScribeJson.Look(ref observed,"rcObserved");
             Scribe_Values.Look(ref CampaignId,"rcCampaign");Scribe_Values.Look(ref NodeId,"rcNode");Scribe_Values.Look(ref Checkpoint,"rcCheckpoint");
             Scribe_Values.Look(ref EntryPending,"rcEntryPending");Scribe_Values.Look(ref Transitioning,"rcTransitioning");
             Scribe_Values.Look(ref nativeVictoryPending,"rcNativeVictoryPending");
@@ -195,6 +222,7 @@ namespace RimCampaign.Runtime
         public override void GameComponentTick() {
             if(!Active||Transitioning||EntryPending)return;
             gameDelta+=1d/60;
+            if(Cinematic)return;
             PollTriggers();
             foreach(var descriptor in Modules.All.Where(d=>typeof(IEventModule).IsAssignableFrom(d.Type))){
                 if(!modules.TryGetValue(descriptor.Id,out var module))modules[descriptor.Id]=module=Modules.Create(descriptor.Id);
@@ -225,25 +253,32 @@ namespace RimCampaign.Runtime
                     nativeVictoryPending=false;State.WantSuccess=true;
                     ScreenFader.SetColor(Color.clear);Find.MusicManagerPlay.ForceSilenceFor(0);
                 }
-                engine.Tick(gameDelta,Math.Min(Time.unscaledDeltaTime,0.1));gameDelta=0;
-                if(Presentation&&!takingControl) TakeControl();
+                communicationPresentationDelta=Math.Min(Time.unscaledDeltaTime,0.1);
+                PruneCommunications();engine.Tick(gameDelta,communicationPresentationDelta);gameDelta=0;PruneCommunications();
+                if(Presentation&&!takingControl&&(!MapMission||Find.CurrentMap==Map)) TakeControl();
                 if(!Presentation&&!nativeVictoryPending) {RestoreControl();if(deferredSaves.Count>0)GameDataSaveLoader.SaveGame(deferredSaves.Dequeue());}
                 if((State.Phase=="Succeeded"||State.Phase=="Defeated")&&!terminalHandled) {
                     terminalHandled=true;RestoreControl();
+                    if(FinishMapMission())return;
+                    RefillCompletedMissionNeeds();
                     var edge=engine.Next(Campaign,NodeId,State.Phase=="Succeeded"?"success":"failure");
-                    if(edge!=null)Transition(edge.To);
+                    if(State.Phase=="Succeeded"&&Node.Results!=null)ShowResult();
+                    else if(edge!=null)Transition(edge.To);
                     else if(State.Phase=="Defeated")ShowDefeat();
-                    else {Find.TickManager.CurTimeSpeed=TimeSpeed.Paused;Find.WindowStack.Add(new Dialog_MessageBox("战役完成 / Campaign complete")); }
+                    else {Find.TickManager.CurTimeSpeed=TimeSpeed.Paused;Find.WindowStack.Add(new Dialog_MessageBox(string.IsNullOrEmpty(EndingText)?RimCampaign.Runtime.RcText.T("战役完成 / Campaign complete"):RcText.T(EndingText))); }
                 }
             }catch(Exception ex){StopWithError(ex);}
         }
         public void RestoreControl() {
-            if(takingControl) {Find.CameraDriver.SetRootPosAndSize(savedCamera,savedSize);Find.TickManager.CurTimeSpeed=savedSpeed;takingControl=false;}
-            subtitle="";black=0;
+            if(takingControl) {if(!keepPresentationCamera)Find.CameraDriver.SetRootPosAndSize(savedCamera,savedSize);Find.TickManager.CurTimeSpeed=savedSpeed;takingControl=false;}
+            subtitle="";black=0;EndCinematic();
         }
         void TakeControl() {
             if(takingControl)return;
             takingControl=true;savedCamera=Find.CameraDriver.MapPosition.ToVector3();savedSize=Find.CameraDriver.RootSize;savedSpeed=Find.TickManager.CurTimeSpeed;Find.Selector.ClearSelection();
+            // Cinematics skip MainTabsRoot's normal empty-selection cleanup, but still draw
+            // modal windows. Close the inspect window itself so its empty background cannot linger.
+            if(Find.MainTabsRoot.OpenTab==MainButtonDefOf.Inspect)Find.MainTabsRoot.SetCurrentTab(null,false);
         }
         void StopWithError(Exception ex) {
             Log.Error("[RimCampaign] "+ex);RestoreControl();Transitioning=true;Find.TickManager.CurTimeSpeed=TimeSpeed.Paused;
@@ -278,6 +313,7 @@ namespace RimCampaign.Runtime
         public void Transition(string next) {
             if(next==NodeId||Completed.Contains(next))throw new InvalidOperationException("Cannot re-enter completed node.");
             if(!Campaign.Nodes.Any(n=>n.Id==next))throw new InvalidOperationException("Missing campaign node: "+next);
+            foreach(var letter in Find.LetterStack.LettersListForReading.OfType<ChoiceLetter_StoryChoice>().Where(l=>l.NodeId==NodeId).ToList())Find.LetterStack.RemoveLetter(letter);
             Completed.Add(NodeId);NodeId=next;Transitioning=true;RestoreControl();
             BeginTransition();
         }
@@ -295,12 +331,15 @@ namespace RimCampaign.Runtime
         }
         public void EnterMap(Settlement settlement) {
             try {
-                var old=Map;Objects.Clear();
+                var old=Map;
+                if(old!=null)foreach(var module in old.components.OfType<ICampaignMapModule>().ToList())module.Detach();
+                Objects.Clear();taskPawns.Clear();
                 Map=settlement==null
                     ?CampaignMaps.Generate(MapSpec,old?.Tile??Find.GameInfo.startingTile)
                     :MapGenerator.GenerateMap(new IntVec3(250,1,250),settlement,settlement.MapGeneratorDef,settlement.ExtraGenStepDefs);
                 BindActors();
                 Populate();
+                NodeInitialized?.Invoke(this);
                 if(old!=null&&old!=Map){
                     var parent=old.Parent;
                     if(old.IsPocketMap)PocketMapUtility.DestroyPocketMap(old);else {Current.Game.DeinitAndRemoveMap(old,false);Find.WorldObjects.Remove(parent);}
@@ -336,10 +375,23 @@ namespace RimCampaign.Runtime
             if(module is IConditionModule evaluator)return evaluator.Evaluate(condition,this);
             throw new InvalidOperationException("Unknown condition "+condition.Op);
         }
+        public bool TestCondition(Condition condition)=>engine?.Test(condition)==true;
+        public void Signal(string kind,string target,string source=""){if(Active&&!Transitioning&&!EntryPending)engine?.Emit(kind,target,source);}
         public bool Execute(Act a,string source,double dt) {
+            if(MapMission&&Find.CurrentMap!=Map&&(a.Freeze||new[]{"Cinematic","Fade","Camera","Move","Dialogue","Subtitle","Communication","PasswordPrompt"}.Contains(a.Kind)))return false;
             if(new[]{"Fade","Camera","Move","Dialogue","Subtitle"}.Contains(a.Kind))TakeControl();
             string target=a.Target=="$source"?source:a.Target;
             switch(a.Kind) {
+                // A queued frozen action may pause gameplay while a non-frozen line is at the
+                // front. Keep that line advancing on the presentation clock to avoid deadlock.
+                case "Communication":return Communications.Execute(a,source,Freeze?Math.Max(dt,communicationPresentationDelta):dt);
+                case "SoundPulse":PlaySoundPulse(target,a.SoundPulse,a.Steps,a.Text);return true;
+                case "Noise":
+                    var noisePoint=MapSpec.Objects.FirstOrDefault(o=>o.Id==target);
+                    if(noisePoint!=null)StealthMapComponent.For(Map)?.EmitNoise(new IntVec3(noisePoint.Position.X,0,noisePoint.Position.Z),(float)a.Value,a.Text=="danger");
+                    return true;
+                case "PasswordPrompt":
+                    Find.WindowStack.Add(new PasswordWindow(a.Text==""?RimCampaign.Runtime.RcText.T("输入密码"):RcText.T(a.Text),input=>SubmitPasswordDetailed(target,input,source)));return true;
                 case "UnlockBoss":
                 case "BossPhaseComplete":
                     var record=Map.GetComponent<BossMapComponent>().Records.LastOrDefault(b=>b.Id==target&&!b.Ended);
@@ -360,25 +412,38 @@ namespace RimCampaign.Runtime
                     return true;
                 case "Despawn":if(Objects.TryGetValue(target,out var obj)&&obj.Spawned)obj.DeSpawn();return true;
                 case "Sound":DefDatabase<SoundDef>.GetNamed(target).PlayOneShotOnCamera();return true;
-                case "Subtitle":subtitle=a.Text;return Timed(a,dt);
+                case "Subtitle":subtitle=RcText.T(a.Text);return Timed(a,dt);
                 case "Fade":black=Mathf.Lerp(a.Text=="in"?1:0,a.Text=="in"?0:1,Progress(a,dt));return progress[a.Id]>=Math.Max(0.001,a.Value);
-                case "Camera":
-                    var marker=MapSpec.Objects.Single(o=>o.Id==target);
-                    var to=new Vector3(marker.Position.X,0,marker.Position.Z);float fraction=Progress(a,dt);
-                    Find.CameraDriver.SetRootPosAndSize(Vector3.Lerp(savedCamera,to,fraction),a.Text==""?Find.CameraDriver.RootSize:float.Parse(a.Text,System.Globalization.CultureInfo.InvariantCulture));
-                    return fraction>=1;
+                case "Cinematic":BeginCinematic(a);return true;
+                case "Camera":return MoveCamera(a,dt);
                 case "Move":
                     var actor=ResolveTriggerPawn(target)??throw new InvalidOperationException("Missing moving Pawn: "+target);var point=MapSpec.Objects.Single(o=>o.Id==a.Text);var destination=new IntVec3(point.Position.X,0,point.Position.Z);
+                    var stealth=StealthMapComponent.For(actor);var guard=stealth?.Guard(actor);
+                    // An incapacitated actor cannot finish walking. End its branch so a parallel scene can continue.
+                    if(actor.Dead||actor.Downed||!actor.Spawned||actor.Map!=Map){
+                        if(guard!=null)stealth.State.Guards[guard.Id].ScriptedAction="";
+                        return true;
+                    }
                     if(a.Freeze) {
                         var end=Progress(a,dt)>=1;if(end){actor.Position=destination;actor.Drawer.tweener.ResetTweenedPosToRoot();}return end;
                     }
-                    if(!progress.ContainsKey(a.Id)){actor.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Goto,destination),JobCondition.InterruptForced);progress[a.Id]=0;}
-                    return actor.Position.DistanceTo(destination)<1.5f;
+                    if(actor.Position==destination&&!actor.pather.Moving){
+                        if(guard!=null)stealth.State.Guards[guard.Id].ScriptedAction="";
+                        return true;
+                    }
+                    if(!progress.ContainsKey(a.Id)||actor.CurJob?.def!=JobDefOf.Goto||actor.CurJob.targetA.Cell!=destination){
+                        if(guard!=null)stealth.State.Guards[guard.Id].ScriptedAction=a.Id;
+                        var move=JobMaker.MakeJob(JobDefOf.Goto,destination);move.playerForced=true;
+                        actor.jobs.StartJob(move,JobCondition.InterruptForced);progress[a.Id]=0;
+                    }
+                    bool arrived=actor.Position==destination&&!actor.pather.Moving;
+                    if(arrived&&guard!=null)stealth.State.Guards[guard.Id].ScriptedAction="";
+                    return arrived;
                 case "Dialogue":
                     if(acknowledgements.Contains(a.Id))return true;
                     if(openDialogs.Add(a.Id))Find.WindowStack.Add(new DialogueWindow(a,()=>acknowledgements.Add(a.Id),choice=>engine.Enqueue(choice.Steps,State.Phase=="Failing")));
                     return false;
-                case "Message":Messages.Message(a.Text,MessageTypeDefOf.NeutralEvent,false);return true;
+                case "Message":Messages.Message(RcText.T(a.Text),MessageTypeDefOf.NeutralEvent,false);return true;
                 default:
                     if(!modules.TryGetValue(a.Kind,out var module))modules[a.Kind]=module=Modules.Create(a.Kind);
                     if(module is IActionModule handler)return handler.Execute(a,this,source,dt);
@@ -388,20 +453,26 @@ namespace RimCampaign.Runtime
         float Progress(Act a,double dt) {if(!progress.ContainsKey(a.Id))progress[a.Id]=0;progress[a.Id]+=(float)dt;return Mathf.Clamp01(progress[a.Id]/(float)Math.Max(0.001,a.Value));}
         bool Timed(Act a,double dt)=>Progress(a,dt)>=1;
         public override void GameComponentOnGUI() {
-            if(!Active)return;
-            foreach(var w in MapSpec.Hud) {
+            // Entry also draws game-component GUI. Keep the prepared campaign's
+            // landing fade off the native planet/site-selection screen.
+            if(!Active||Starting||(!MapMission&&Find.CurrentMap?.GetComponent<MissionMapComponent>()?.Controller!=null))return;
+            if(!Transitioning&&!EntryPending&&Map!=null&&Find.CurrentMap==Map)
+                foreach(var overlay in Map.components.OfType<ICampaignMapOverlay>())overlay.DrawCampaignOverlay();
+            foreach(var w in MapSpec.Hud.Where(w=>!Cinematic)) {
                 var rect=new Rect(w.X,w.Y,w.Width,w.Height);
                 if(w.Kind=="Progress")Widgets.FillableBar(rect,(float)(Read(w.Binding)/Math.Max(1,w.Maximum)));
                 else if(w.Kind=="Objectives") {
-                    foreach(var o in MapSpec.Objectives) {
+                    foreach(var o in engine?.VisibleObjectives()??Enumerable.Empty<Objective>()) {
                         string state=State.Objectives.TryGetValue(o.Id,out var v)?v:"Active";
                         GUI.color=state=="Failed"?Color.red:state=="Complete"?Color.green:Color.white;
-                        Widgets.Label(rect,(state=="Failed"?"✗ ":state=="Complete"?"✓ ":"• ")+o.Name);rect.y+=28;
+                        Widgets.Label(rect,(state=="Failed"?"✗ ":state=="Complete"?"✓ ":"• ")+RcText.T(o.Name));rect.y+=28;
                     }GUI.color=Color.white;
-                }else Widgets.Label(rect,w.Kind=="Text"?w.Text:w.Text+" "+Read(w.Binding).ToString("0"));
+                }else Widgets.Label(rect,w.Kind=="Text"?RcText.T(w.Text):RcText.T(w.Text)+" "+Read(w.Binding).ToString("0"));
             }
             if(black>0)Widgets.DrawBoxSolid(new Rect(0,0,UI.screenWidth,UI.screenHeight),new Color(0,0,0,black));
             if(subtitle!="")Widgets.Label(new Rect(UI.screenWidth*0.15f,UI.screenHeight-120,UI.screenWidth*0.7f,90),subtitle);
+            DrawOpeningTitle();
+            DrawCommunications();
         }
     }
     public class DefeatWindow : Window
@@ -409,10 +480,10 @@ namespace RimCampaign.Runtime
         readonly CampaignController c; public override Vector2 InitialSize=>new Vector2(440,260);
         public DefeatWindow(CampaignController c) {this.c=c;forcePause=true;absorbInputAroundWindow=true;closeOnCancel=false;}
         public override void DoWindowContents(Rect r) {
-            Widgets.Label(new Rect(0,0,r.width,40),"战败 / Defeat");
-            if(Widgets.ButtonText(new Rect(0,55,r.width,40),"重试本关 / Retry level")){Close();c.Retry();}
-            if(Widgets.ButtonText(new Rect(0,105,r.width,40),"读取存档 / Load game"))Find.WindowStack.Add(new Dialog_SaveFileList_Load());
-            if(Widgets.ButtonText(new Rect(0,155,r.width,40),"回到主界面 / Main menu")){c.RestoreControl();GenScene.GoToMainMenu();}
+            Widgets.Label(new Rect(0,0,r.width,40),string.IsNullOrEmpty(c.State.FailureReason)?RimCampaign.Runtime.RcText.T("战败 / Defeat"):RcText.T(c.State.FailureReason));
+            if(Widgets.ButtonText(new Rect(0,55,r.width,40),RimCampaign.Runtime.RcText.T("重试本关 / Retry level"))){Close();c.Retry();}
+            if(Widgets.ButtonText(new Rect(0,105,r.width,40),RimCampaign.Runtime.RcText.T("读取存档 / Load game")))Find.WindowStack.Add(new Dialog_SaveFileList_Load());
+            if(Widgets.ButtonText(new Rect(0,155,r.width,40),RimCampaign.Runtime.RcText.T("回到主界面 / Main menu"))){c.RestoreControl();GenScene.GoToMainMenu();}
         }
     }
     public class DialogueWindow : Window
@@ -421,10 +492,10 @@ namespace RimCampaign.Runtime
         public override Vector2 InitialSize=>new Vector2(650,400);
         public DialogueWindow(Act action,Action done,Action<Act> choose){this.action=action;this.done=done;this.choose=choose;forcePause=action.Freeze;absorbInputAroundWindow=true;closeOnCancel=false;}
         public override void DoWindowContents(Rect r) {
-            Widgets.Label(new Rect(0,0,r.width,r.height-150),action.Text);
-            var choices=action.Steps.Count==0?new List<Act>{new Act{Name="继续 / Continue"}}:action.Steps;
+            Widgets.Label(new Rect(0,0,r.width,r.height-150),RcText.T(action.Text));
+            var choices=action.Steps.Count==0?new List<Act>{new Act{Name=RimCampaign.Runtime.RcText.T("继续 / Continue")}}:action.Steps;
             float y=r.height-choices.Count*40;
-            foreach(var choice in choices){if(Widgets.ButtonText(new Rect(0,y,r.width,34),choice.Name)){choose(choice);done();Close();}y+=40;}
+            foreach(var choice in choices){if(Widgets.ButtonText(new Rect(0,y,r.width,34),RcText.T(choice.Name))){choose(choice);done();Close();}y+=40;}
         }
     }
     public class OpenNodeWindow : Window
@@ -432,8 +503,8 @@ namespace RimCampaign.Runtime
         readonly CampaignController c;public override Vector2 InitialSize=>new Vector2(420,160);
         public OpenNodeWindow(CampaignController c){this.c=c;forcePause=true;closeOnCancel=false;preventCameraMotion=false;absorbInputAroundWindow=false;}
         public override void DoWindowContents(Rect r){
-            Widgets.Label(new Rect(0,0,r.width,50),"在世界地图选择殖民地位置 / Select a world tile");
-            if(Widgets.ButtonText(new Rect(0,65,r.width,40),"在所选地块定居 / Settle")) {
+            Widgets.Label(new Rect(0,0,r.width,50),RimCampaign.Runtime.RcText.T("在世界地图选择殖民地位置 / Select a world tile"));
+            if(Widgets.ButtonText(new Rect(0,65,r.width,40),RimCampaign.Runtime.RcText.T("在所选地块定居 / Settle"))) {
                 var tile=Find.WorldInterface.SelectedTile;
                 if(!c.TryChooseOpenTile(tile)){Messages.Message("Invalid settlement tile",MessageTypeDefOf.RejectInput,false);return;}
                 Close();
@@ -441,13 +512,13 @@ namespace RimCampaign.Runtime
         }
     }
     [HarmonyPatch(typeof(TickManager),nameof(TickManager.DoSingleTick))]
-    static class FreezeSimulation {static bool Prefix()=>Current.Game?.GetComponent<CampaignController>()?.Freeze!=true;}
+    static class FreezeSimulation {static bool Prefix()=>CampaignController.Focused?.Freeze!=true;}
     [HarmonyPatch(typeof(GameDataSaveLoader),nameof(GameDataSaveLoader.SaveGame))]
-    static class SafeSave {static bool Prefix(string fileName)=>Current.Game?.GetComponent<CampaignController>()?.DeferSave(fileName)!=true;}
+    static class SafeSave {static bool Prefix(string fileName)=>CampaignController.Focused?.DeferSave(fileName)!=true;}
     [HarmonyPatch(typeof(GameVictoryUtility),nameof(GameVictoryUtility.ShowCredits))]
     static class VanillaVictory {
         static bool Prefix()=>Current.Game?.GetComponent<CampaignController>()?.NativeVictory()!=true;
     }
     [HarmonyPatch(typeof(GameEnder),nameof(GameEnder.CheckOrUpdateGameOver))]
-    static class CampaignGameOver {static bool Prefix()=>Current.Game?.GetComponent<CampaignController>()?.Active!=true;}
+    static class CampaignGameOver {static bool Prefix()=>Current.Game?.GetComponent<CampaignController>()?.StoryActive!=true;}
 }

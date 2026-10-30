@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <JobDef>
+    <defName>RC_UseCampaignDevice</defName>
+    <driverClass>RimCampaign.Runtime.JobDriver_UseCampaignDevice</driverClass>
+    <reportString>正在操作 TargetA。</reportString>
+    <playerInterruptible>true</playerInterruptible>
+  </JobDef>
+  <ThingDef Name="RC_DeviceBase" ParentName="BuildingBase" Abstract="True">
+    <thingClass>Building</thingClass>
+    <category>Building</category>
+    <selectable>true</selectable>
+    <noRightClickDraftAttack>true</noRightClickDraftAttack>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Impassable</passability>
+    <fillPercent>0.3</fillPercent>
+    <size>(1,1)</size>
+    <rotatable>true</rotatable>
+    <statBases><MaxHitPoints>180</MaxHitPoints><Flammability>0</Flammability></statBases>
+    <building><claimable>false</claimable><deconstructible>false</deconstructible></building>
+    <graphicData><graphicClass>Graphic_Single</graphicClass></graphicData>
+  </ThingDef>
+  <ThingDef ParentName="RC_DeviceBase">
+    <defName>RC_Camera</defName><label>监控摄像头</label>
+    <description>监视指定扇形区域的摄像头。接管后共享视野。选中建筑可以命令行动员前往操作。</description>
+    <graphicData><texPath>Things/Building/Misc/DropBeacon</texPath><color>(0.55,0.85,1)</color></graphicData>
+  </ThingDef>
+  <ThingDef ParentName="RC_DeviceBase">
+    <defName>RC_Broadcast</defName><label>广播设备</label>
+    <description>可入侵的广播设备。接管后可从建筑按钮远程播放声音。</description>
+    <graphicData><texPath>Things/Building/Misc/DropBeacon</texPath><color>(1,0.8,0.35)</color></graphicData>
+  </ThingDef>
+  <ThingDef ParentName="RC_DeviceBase">
+    <defName>RC_Uplink</defName><label>对外通讯终端</label>
+    <description>守卫用来传出情报的通讯终端。切断终端可以中止外传。</description>
+    <graphicData><texPath>Things/Building/Misc/AncientTerminal/AncientTerminal</texPath><graphicClass>Graphic_Multi</graphicClass><color>(1,0.65,0.65)</color></graphicData>
+  </ThingDef>
+  <ThingDef ParentName="RC_DeviceBase">
+    <defName>RC_Terminal</defName><label>密码终端</label>
+    <description>接受指定字符的终端。正确输入可以触发作者配置的事件。</description>
+    <graphicData><texPath>Things/Building/Misc/AncientTerminal/AncientTerminal</texPath><graphicClass>Graphic_Multi</graphicClass></graphicData>
+  </ThingDef>
+  <ThingDef ParentName="CrateBase">
+    <defName>RC_SupplyCrate</defName><label>补给箱</label>
+    <description>装有可领取物资的补给箱。选中后指定角色打开，箱内物品及额外开箱事件由战役配置。</description>
+    <size>(1,2)</size><fillPercent>0.4</fillPercent>
+    <statBases><MaxHitPoints>180</MaxHitPoints><Flammability>0</Flammability></statBases>
+    <graphicData><texPath>Things/Building/Ruins/AncientHermeticCrate</texPath><graphicClass>Graphic_Multi</graphicClass><drawSize>(1,2)</drawSize></graphicData>
+    <comps><li Class="CompProperties_EmptyStateGraphic"><graphicData><texPath>Things/Building/Ruins/AncientHermeticCrateOpen</texPath><graphicClass>Graphic_Multi</graphicClass><drawSize>(1,2)</drawSize></graphicData></li></comps>
+  </ThingDef>
+</Defs>

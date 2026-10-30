@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net8.0</TargetFramework><GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles><UseAppHost>false</UseAppHost><RuntimeFrameworkVersion>10.0.0</RuntimeFrameworkVersion><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup><ProjectReference Include="../RimCampaign.Core/RimCampaign.Core.csproj" /><ProjectReference Include="../RimCampaign.SDK/RimCampaign.SDK.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../RimCampaign.Editor/MapViewport.cs" Link="MapViewport.cs" /></ItemGroup>
 </Project>

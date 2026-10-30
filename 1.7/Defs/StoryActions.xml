@@ -1,0 +1,3 @@
+<Defs>
+  <LetterDef><defName>RC_StoryChoice</defName><letterClass>RimCampaign.Runtime.ChoiceLetter_StoryChoice</letterClass><color>(0.3,0.65,1)</color><flashColor>(0.3,0.65,1)</flashColor></LetterDef>
+</Defs>

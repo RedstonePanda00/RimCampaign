@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 
 namespace RimCampaign.Core
 {
+    public enum PasswordSubmission { Accepted, Mismatch, NotRunning, MissingRule, Disabled, AlreadySubmitted, ConditionsNotMet, OperatorUnavailable, OutOfReach, DeviceUnavailable }
     public class Signal
     {
         public string RuleId { get; set; } = "";
@@ -19,6 +20,7 @@ namespace RimCampaign.Core
         public bool FailureContext { get; set; }
         public string Source { get; set; } = "";
         public List<Fiber> Children { get; set; } = new List<Fiber>();
+        public bool ActorBound { get; set; }
         public bool Done => Index >= Steps.Count;
     }
     public class DamageSample { public int Tick { get; set; } public double Amount { get; set; } }
@@ -40,9 +42,11 @@ namespace RimCampaign.Core
     }
     public class RunState
     {
+        public MissionPerformance Performance { get; set; } = new MissionPerformance();
         public Dictionary<string,RuleMemory> Triggers { get; set; } = new Dictionary<string,RuleMemory>();
         [OnDeserialized] void RestoreTriggers(StreamingContext context){if(Triggers==null)Triggers=new Dictionary<string,RuleMemory>();}
         public string Phase { get; set; } = "Running";
+        public string FailureReason { get; set; } = "";
         public double Elapsed { get; set; }
         public Dictionary<string, double> Variables { get; set; } = new Dictionary<string, double>();
         public Dictionary<string, string> Objectives { get; set; } = new Dictionary<string, string>();
@@ -60,6 +64,8 @@ namespace RimCampaign.Core
         bool Execute(Act action, string eventSource, double delta);
     }
     public interface IConditionHost { bool Evaluate(Condition condition); }
+    public interface ITaskActorHost { bool TaskActorAvailable(string actor); }
+    public interface IConversationHost { bool ExecuteConversation(List<Act> lines,string source,double delta); }
     public sealed class Engine
     {
         public RunState State { get; }
@@ -68,6 +74,18 @@ namespace RimCampaign.Core
         public void Emit(string kind, string target = "", string source = "") => State.Signals.Add(new Signal { Kind = kind, Target = target, Source = source });
         public static bool NeedsHost(string kind)=>new[]{"Death","Downed","DamageWindow","BossPhase","BossDefeated","BossRemoved"}.Contains(kind);
         public void EmitForRule(string rule,string kind,string source="")=>State.Signals.Add(new Signal{RuleId=rule,Kind=kind,Source=source});
+        public bool SubmitPassword(string ruleId,string input,string source="")=>SubmitPasswordDetailed(ruleId,input,source)==PasswordSubmission.Accepted;
+        public PasswordSubmission SubmitPasswordDetailed(string ruleId,string input,string source="")
+        {
+            var rule=map.Rules.FirstOrDefault(r=>r.Id==ruleId&&r.Events.Any(e=>e.Kind=="Password"));
+            if(rule==null)return PasswordSubmission.MissingRule;
+            if(State.Phase!="Running")return PasswordSubmission.NotRunning;
+            if(!(State.Enabled.TryGetValue(rule.Id,out var enabled)?enabled:rule.Enabled))return PasswordSubmission.Disabled;
+            if(rule.Once&&(State.Firings.ContainsKey(rule.Id)||State.Signals.Any(s=>s.RuleId==rule.Id&&s.Kind=="Password")))return PasswordSubmission.AlreadySubmitted;
+            if(!Test(rule.When))return PasswordSubmission.ConditionsNotMet;
+            bool match=StealthMath.PasswordMatches(rule,input);
+            if(match)EmitForRule(ruleId,"Password",source);else Emit("PasswordRejected",ruleId,source);return match?PasswordSubmission.Accepted:PasswordSubmission.Mismatch;
+        }
         public void Start()
         {
             State.Variables = new Dictionary<string, double>(map.Inputs);
@@ -81,6 +99,7 @@ namespace RimCampaign.Core
         }
         public void Enqueue(List<Act> actions, bool failure = false, string source = "") => State.Fibers.Add(new Fiber { Steps = Instantiate(actions), FailureContext = failure, Source = source });
         public double Read(string key) => State.Variables.TryGetValue(key, out var n) ? n : host.Read(key);
+        public IEnumerable<Objective> VisibleObjectives() => map.Objectives.Where(o => Test(o.VisibleWhen));
         public bool Test(Condition c)
         {
             if (c == null) return true;
@@ -108,11 +127,12 @@ namespace RimCampaign.Core
                     if (!enabled || (rule.Once && State.Firings.ContainsKey(rule.Id))) continue;
                     var matches = events.Where(s => (string.IsNullOrEmpty(s.RuleId)||s.RuleId==rule.Id) &&
                         (!NeedsHost(s.Kind)||(!string.IsNullOrEmpty(rule.Host)&&s.RuleId==rule.Id)) &&
-                        (s.Kind!="RangeEnter"&&s.Kind!="RangeLeave"||s.RuleId==rule.Id) &&
+                        (s.Kind!="RangeEnter"&&s.Kind!="RangeLeave"&&s.Kind!="Password"||s.RuleId==rule.Id) &&
                         rule.Events.Any(ev => ev.Kind == s.Kind && (s.RuleId==rule.Id||ev.Target == "" || ev.Target == s.Target))).ToList();
                     bool timed = rule.Events.Any(ev => ev.Kind == "Elapsed" &&
                         ((previous < ev.Seconds && State.Elapsed >= ev.Seconds) || (ev.Seconds == 0 && events.Any(s => s.Kind == "Entry"))));
                     if(timed)matches.Add(new Signal { Kind="Elapsed" });
+                    if(gameDelta>0&&rule.Events.Any(ev=>ev.Kind=="Periodic"&&ev.Seconds>0&&Math.Floor(previous/ev.Seconds)<Math.Floor(State.Elapsed/ev.Seconds)))matches.Add(new Signal{Kind="Periodic"});
                     foreach(var matched in matches) {
                         if(!Test(rule.When))continue;
                         State.Firings[rule.Id] = State.Firings.TryGetValue(rule.Id, out var count) ? count + 1 : 1;
@@ -147,6 +167,7 @@ namespace RimCampaign.Core
         }
         void Advance(Fiber f, double game, double presentation, int depth)
         {
+            if(f.ActorBound&&host is ITaskActorHost actors&&!actors.TaskActorAvailable(f.Source)){f.Index=f.Steps.Count;f.Children.Clear();return;}
             if(State.WantFailure&&!f.FailureContext)return;
             if (depth > 32) throw new InvalidOperationException("Action nesting exceeds 32.");
             double availableGame = game, availablePresentation = presentation;
@@ -159,31 +180,47 @@ namespace RimCampaign.Core
                     if (f.Children.Any(c => !c.Done)) return;
                     f.Children.Clear(); f.Index++; availableGame = availablePresentation = 0; continue;
                 }
-                if (a.Kind == "Wait") {
+                if(a.Kind=="WaitUntil") { if(!Test(a.When))return; }
+                else if (a.Kind == "Wait") {
                     if (f.Remaining < 0) f.Remaining = Math.Max(0, a.Value);
                     var used = Math.Min(dt, f.Remaining); f.Remaining -= used;
                     if (a.Freeze || f.FailureContext) availablePresentation -= used; else availableGame -= used;
                     if (f.Remaining > 0) return;
-                } else if (a.Kind == "If" || a.Kind == "Sequence" || a.Kind == "Parallel" || a.Kind == "Group") {
+                } else if (a.Kind == "If" || a.Kind == "Sequence" || a.Kind == "Cinematic" || a.Kind == "Parallel" || a.Kind == "Group") {
+                    if(a.Kind=="Cinematic"&&!host.Execute(a,f.Source,dt))return;
                     var steps = a.Kind == "If" ? (Test(a.When) ? a.Steps : a.Else) :
                         a.Kind == "Group" ? map.Groups.Single(g => g.Id == a.Target).Actions : a.Steps;
                     steps=Instantiate(steps);
                     if(a.Freeze||f.FailureContext)foreach(var childAction in Validation.Actions(steps))childAction.Freeze=true;
                     if (a.Kind == "Parallel") f.Children = steps.Select(s => new Fiber { Steps = new List<Act> { s }, Source = f.Source, FailureContext = f.FailureContext }).ToList();
-                    else if (steps.Count > 0) f.Children.Add(new Fiber { Steps = Instantiate(steps), Source = f.Source, FailureContext = f.FailureContext });
+                    else if (steps.Count > 0) {
+                        var binding=a.Kind=="Group"?map.Groups.Single(g=>g.Id==a.Target).Actor:"";
+                        f.Children.Add(new Fiber { Steps = Instantiate(steps), Source = string.IsNullOrEmpty(binding)||binding=="$source"?f.Source:binding, ActorBound=!string.IsNullOrEmpty(binding), FailureContext = f.FailureContext });
+                    }
                     if (f.Children.Count > 0) continue;
+                } else if(a.Kind=="Communication"&&host is IConversationHost conversations) {
+                    int end=f.Index;var lines=new List<Act>();
+                    while(end<f.Steps.Count&&DialogueOnly(f.Steps[end],0,a.Freeze)){AppendDialogue(f.Steps[end],lines);end++;}
+                    if(!conversations.ExecuteConversation(lines,f.Source,dt))return;
+                    f.Index=end;f.Remaining=-1;availableGame=availablePresentation=0;continue;
                 } else if (a.Kind == "Set" || a.Kind == "Add") {
                     State.Variables[a.Target] = a.Kind == "Set" ? a.Value : Read(a.Target) + a.Value; Emit("Variable", a.Target, f.Source);
                 } else if (a.Kind == "Objective") { State.Objectives[a.Target] = a.Text; Emit("Objective", a.Target, f.Source); }
                 else if (a.Kind == "Timer") State.Timers[a.Target] = a.Value;
                 else if (a.Kind == "Enable") State.Enabled[a.Target] = a.Value != 0;
-                else if (a.Kind == "Fail") State.WantFailure = true;
+                else if (a.Kind == "Fail") { State.WantFailure = true; State.FailureReason=a.Text; }
                 else if (a.Kind == "Win") State.WantSuccess = true;
                 else if (!host.Execute(a, f.Source, dt)) return;
                 f.Remaining = -1; f.Index++;
                 if(State.WantFailure&&!f.FailureContext)return;
             }
             if (budget == 0) throw new InvalidOperationException("Action budget exceeded (possible recursive group).");
+        }
+        static bool DialogueOnly(Act action,int depth,bool freeze)=>depth<32&&action.Freeze==freeze&&(action.Kind=="Communication"||
+            (action.Kind=="If"||action.Kind=="Sequence")&&action.Steps.Concat(action.Else).All(a=>DialogueOnly(a,depth+1,freeze)));
+        void AppendDialogue(Act action,List<Act> lines){
+            if(action.Kind=="Communication"){lines.Add(action);return;}
+            foreach(var child in action.Kind=="If"?(Test(action.When)?action.Steps:action.Else):action.Steps)AppendDialogue(child,lines);
         }
         public Edge Next(Campaign c, string node, string result) => c.Edges.Where(e => e.From == node && e.Result == result && Test(e.When)).OrderByDescending(e => e.Priority).FirstOrDefault();
     }

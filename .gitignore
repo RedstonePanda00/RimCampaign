@@ -1,7 +1,24 @@
+# Local development directories.
+/[Tt]ools/
+/[Dd]ocs/
+/[Aa]rtifacts/
+.work/
+.agents/
+
+# Build and IDE caches.
 **/bin/
 **/obj/
-.vs/
+**/.idea/
+**/.vs/
 *.user
-artifacts/
-/Docs/
+*.DotSettings.user
+
+# Temporary files and editor backups.
 *.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*~
+**/__pycache__/
+*.pyc

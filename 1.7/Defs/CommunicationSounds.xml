@@ -1,0 +1,14 @@
+<Defs>
+  <!-- Core UI clip, with a separate voice budget and an audible communication level. -->
+  <SoundDef>
+    <defName>RC_CommunicationStart</defName>
+    <context>MapOnly</context>
+    <maxSimultaneous>1</maxSimultaneous>
+    <subSounds><li>
+      <onCamera>true</onCamera>
+      <grains><li Class="AudioGrain_Clip"><clipPath>UI/Alerts/AlertBasic</clipPath></li></grains>
+      <volumeRange>27~27</volumeRange>
+      <pitchRange>1~1</pitchRange>
+    </li></subSounds>
+  </SoundDef>
+</Defs>

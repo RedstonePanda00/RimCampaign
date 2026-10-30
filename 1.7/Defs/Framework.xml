@@ -10,6 +10,13 @@
     <genSteps><li>RC_MapContents</li></genSteps>
     <pocketMapProperties><biome>TemperateForest</biome><temperature>21</temperature><destroyOnParentMapAbandoned>false</destroyOnParentMapAbandoned></pocketMapProperties>
   </MapGeneratorDef>
+  <MapGeneratorDef MayRequire="Ludeon.RimWorld.Odyssey">
+    <defName>RC_PocketSpace</defName>
+    <genSteps><li>RC_MapContents</li></genSteps>
+    <renderWorld>true</renderWorld><disableMapClippers>true</disableMapClippers>
+    <defaultUnderGridTerrain>Space</defaultUnderGridTerrain>
+    <pocketMapProperties><biome>Space</biome><temperature>-75</temperature><canLaunchGravship>true</canLaunchGravship><destroyOnParentMapAbandoned>false</destroyOnParentMapAbandoned></pocketMapProperties>
+  </MapGeneratorDef>
   <FactionDef ParentName="FactionBase">
     <defName>RC_MapFaction</defName><label>campaign faction</label><fixedName>Campaign faction</fixedName>
     <humanlikeFaction>true</humanlikeFaction><techLevel>Industrial</techLevel>

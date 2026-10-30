@@ -1,0 +1,14 @@
+<Defs>
+ <WorkGiverDef>
+  <defName>RC_OutpostRefuel</defName>
+  <label>refuel field outpost</label>
+  <giverClass>RimCampaign.Runtime.WorkGiver_OutpostRefuel</giverClass>
+  <workType>Hauling</workType>
+  <priorityInType>100</priorityInType>
+  <verb>refuel</verb>
+  <gerund>refueling</gerund>
+  <workTags>Hauling</workTags>
+  <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  <nonColonistsCanDo>true</nonColonistsCanDo>
+ </WorkGiverDef>
+</Defs>

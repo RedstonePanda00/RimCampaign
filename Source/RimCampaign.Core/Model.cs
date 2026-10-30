@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using System.Text;
@@ -13,18 +14,43 @@ namespace RimCampaign.Core
         public static string Write<T>(T value) { using (var s = new MemoryStream()) { Serializer<T>().WriteObject(s, value); return Encoding.UTF8.GetString(s.ToArray()); } }
         public static T Read<T>(string text) { using (var s = new MemoryStream(Encoding.UTF8.GetBytes(text))) return (T)Serializer<T>().ReadObject(s); }
         public static T Copy<T>(T value) => Read<T>(Write(value));
-        public static void Save<T>(string path, T value)
+        public static bool CompressedPath(string path) => path.EndsWith(".json.gz", StringComparison.OrdinalIgnoreCase);
+        static Stream OpenDocument(string path)
+        {
+            var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
+            bool compressed = stream.ReadByte() == 0x1f && stream.ReadByte() == 0x8b;
+            stream.Position = 0;
+            return compressed ? (Stream)new GZipStream(stream, CompressionMode.Decompress) : stream;
+        }
+        static void WriteFile(string path, Action<Stream> write)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
-            var tmp = path + ".tmp"; File.WriteAllText(tmp, Write(value), new UTF8Encoding(false));
-            if (File.Exists(path)) File.Replace(tmp, path, null); else File.Move(tmp, path);
+            var tmp = path + ".tmp-" + Guid.NewGuid().ToString("N");
+            try {
+                using (var stream = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536)) {
+                    if (CompressedPath(path)) {
+                        using (var gzip = new GZipStream(stream, CompressionLevel.Optimal, true)) write(gzip);
+                    } else write(stream);
+                }
+                if (File.Exists(path)) File.Replace(tmp, path, null); else File.Move(tmp, path);
+            } finally { if (File.Exists(tmp)) File.Delete(tmp); }
         }
-        public static T Load<T>(string path) => Read<T>(File.ReadAllText(path, Encoding.UTF8));
+        public static void Save<T>(string path, T value) => WriteFile(path, stream => Serializer<T>().WriteObject(stream, value));
+        public static void CopyFile(string source, string destination)
+        {
+            if (string.Equals(Path.GetFullPath(source), Path.GetFullPath(destination), StringComparison.OrdinalIgnoreCase)) return;
+            using (var input = OpenDocument(source)) WriteFile(destination, output => input.CopyTo(output));
+        }
+        public static T Load<T>(string path) {
+            using (var stream = OpenDocument(path)) return (T)Serializer<T>().ReadObject(stream);
+        }
     }
     public class Named
     {
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         public string Name { get; set; } = "";
+        public string Notes { get; set; } = "";
+        public List<string> RelatedObjects { get; set; } = new List<string>();
     }
     public class DefRef
     {
@@ -41,6 +67,7 @@ namespace RimCampaign.Core
         public List<Campaign> Campaigns { get; set; } = new List<Campaign>();
         public List<Profile> Profiles { get; set; } = new List<Profile>();
         public List<BossTemplate> Bosses { get; set; } = new List<BossTemplate>();
+        public List<StructureSpec> Structures { get; set; } = new List<StructureSpec>();
         public List<Dependency> ManualDependencies { get; set; } = new List<Dependency>();
         public List<string> ManualLoadAfter { get; set; } = new List<string>();
         public List<DefRef> ExtraReferences { get; set; } = new List<DefRef>();
@@ -52,12 +79,15 @@ namespace RimCampaign.Core
     public class Placement : Named
     {
         public bool SpawnAtStart { get; set; } = true;
-        [OnDeserializing] void DefaultPlacement(StreamingContext context){SpawnAtStart=true;}
+        [OnDeserializing] void DefaultPlacement(StreamingContext context){SpawnAtStart=true;Contents=new List<DeviceLoot>();}
+        public List<DeviceLoot> Contents { get; set; } = new List<DeviceLoot>();
+        public BookText Book { get; set; }
         public string Kind { get; set; } = "Thing";
         public DefRef Def { get; set; } = new DefRef();
         public DefRef Stuff { get; set; }
         public Cell Position { get; set; } = new Cell();
         public int Rotation { get; set; }
+        public int? GraphicIndex { get; set; }
         public int Count { get; set; } = 1;
         public string Role { get; set; } = "";
         public string Group { get; set; } = "";
@@ -94,11 +124,24 @@ namespace RimCampaign.Core
 
     public class MapSpec : Named
     {
+        public List<SceneInteractionSpec> Interactions { get; set; } = new List<SceneInteractionSpec>();
+        public List<MapRewardSpec> Rewards { get; set; } = new List<MapRewardSpec>();
+        public List<MapComponentSpec> Components { get; set; } = new List<MapComponentSpec>();
+        public List<PatrolRoute> PatrolRoutes { get; set; } = new List<PatrolRoute>();
+        public List<CombatPatrolSpec> CombatPatrols { get; set; } = new List<CombatPatrolSpec>();
+        public StealthSpec Stealth { get; set; } = new StealthSpec();
         public List<MapFaction> Factions { get; set; } = MapFactions.Defaults();
         // Legacy pairwise data is consumed on load, never used for runtime relationships.
         public List<MapFactionRelation> FactionRelations { get; set; } = new List<MapFactionRelation>();
         [OnDeserialized]
         void RestoreFactions(StreamingContext context) {
+            if(Interactions==null)Interactions=new List<SceneInteractionSpec>();
+            if(Rewards==null)Rewards=new List<MapRewardSpec>();
+            if(Components==null)Components=new List<MapComponentSpec>();
+            if(PatrolRoutes==null)PatrolRoutes=new List<PatrolRoute>();
+            if(CombatPatrols==null)CombatPatrols=new List<CombatPatrolSpec>();
+            if(NaturalClearings==null)NaturalClearings=new List<Region>();
+            if(Stealth==null)Stealth=new StealthSpec();
             if(Factions==null)Factions=MapFactions.Defaults();
             foreach(var faction in Factions) {
                 if(faction.Id=="Player"){faction.Side="Ally";continue;}
@@ -109,6 +152,8 @@ namespace RimCampaign.Core
         public int Width { get; set; } = 80;
         public int Height { get; set; } = 80;
         public string Base { get; set; } = "Blank";
+        public TerrainInitialization TerrainInitialization { get; set; }
+        public List<Region> NaturalClearings { get; set; } = new List<Region>();
         public DefRef Terrain { get; set; } = new DefRef { Kind = "TerrainDef", Name = "Soil" };
         public List<Placement> Objects { get; set; } = new List<Placement>();
         public List<Region> Regions { get; set; } = new List<Region>();
@@ -133,10 +178,25 @@ namespace RimCampaign.Core
     }
     public class BossTemplate : Named
     {
+        [OnDeserializing] void DefaultEncounter(StreamingContext context){InitiallyActive=true;DamageMultiplier=1;TargetRole="";Components=new List<BossComponentSpec>();}
+        public List<BossComponentSpec> Components { get; set; } = new List<BossComponentSpec>();
+        public bool InitiallyActive { get; set; } = true;
+        public double RegenerationPerSecond { get; set; }
+        public float ReviveAfterSeconds { get; set; }
+        public double DamageMultiplier { get; set; } = 1;
+        public string TargetRole { get; set; } = "";
         public double MaxHealth { get; set; } = 3000;
         public DefRef PawnKind { get; set; } = new DefRef { Kind="PawnKindDef", Name="Colonist" };
         public string Profile { get; set; } = "";
         public List<BossPhase> Phases { get; set; } = new List<BossPhase> { new BossPhase { Name="阶段 1" } };
+    }
+    public class BossComponentSpec : Named
+    {
+        public string Module { get; set; } = "boss.adaptation";
+        public bool Enabled { get; set; } = true;
+        public Dictionary<string,string> Parameters { get; set; } = new Dictionary<string,string>{{"threshold","100"},{"ceiling","500"}};
+        public List<DefRef> DamageExceptions { get; set; } = new List<DefRef>();
+        [OnDeserializing] void Defaults(StreamingContext context){Enabled=true;Parameters=new Dictionary<string,string>();DamageExceptions=new List<DefRef>();}
     }
     public class BossPhase : Named
     {
@@ -166,6 +226,7 @@ namespace RimCampaign.Core
     }
     public class Objective : Named
     {
+        public Condition VisibleWhen { get; set; }
         public string Mode { get; set; } = "Standard";
         public string Role { get; set; } = "";
         public bool Required { get; set; } = true;
@@ -194,11 +255,20 @@ namespace RimCampaign.Core
     }
     public class Rule : Named
     {
+        public bool ShowOnMap { get; set; }
+        public string Password { get; set; } = "";
+        public bool PasswordCaseSensitive { get; set; } = true;
+        public bool PasswordTrimInput { get; set; }
         public string Host { get; set; } = "";
         public float Radius { get; set; } = 5;
+        public string RangeShape { get; set; } = "Circle";
+        public float RangeWidth { get; set; } = 10;
+        public float RangeHeight { get; set; } = 10;
+        public string Detect { get; set; } = "PlayerUnits";
+        public string Subject { get; set; } = "";
         public double DamageWindowSeconds { get; set; } = 5;
         public double DamageThreshold { get; set; } = 50;
-        [OnDeserializing] void DefaultRule(StreamingContext context){Host="";Radius=5;DamageWindowSeconds=5;DamageThreshold=50;}
+        [OnDeserializing] void DefaultRule(StreamingContext context){Host="";Radius=5;RangeShape="Circle";RangeWidth=RangeHeight=10;Detect="PlayerUnits";Subject="";DamageWindowSeconds=5;DamageThreshold=50;Password="";PasswordCaseSensitive=true;}
         public Cell Position { get; set; } = new Cell();
         public bool Enabled { get; set; } = true;
         public bool Once { get; set; } = true;
@@ -208,6 +278,10 @@ namespace RimCampaign.Core
     }
     public class Act : Named
     {
+        public string Arrival { get; set; } = "Ground";
+        public string Origin { get; set; } = "";
+        public SoundPulseSpec SoundPulse { get; set; }
+        public CommunicationSpec Communication { get; set; }
         public string Kind { get; set; } = "Wait";
         public string Target { get; set; } = "";
         public string Text { get; set; } = "";
@@ -217,7 +291,7 @@ namespace RimCampaign.Core
         public List<Act> Steps { get; set; } = new List<Act>();
         public List<Act> Else { get; set; } = new List<Act>();
     }
-    public class ActionGroup : Named { public List<Act> Actions { get; set; } = new List<Act>(); }
+    public class ActionGroup : Named { public string Actor { get; set; } = ""; public List<Act> Actions { get; set; } = new List<Act>(); }
     public class Campaign : Named
     {
         public string Start { get; set; } = "";
@@ -227,6 +301,9 @@ namespace RimCampaign.Core
     }
     public class Node : Named
     {
+        public OpeningTitleSpec OpeningTitle { get; set; }
+        public bool RefillNeedsOnSuccess { get; set; }
+        public ResultSpec Results { get; set; }
         public string Kind { get; set; } = "Story";
         public string Map { get; set; } = "";
         public float X { get; set; } public float Y { get; set; }

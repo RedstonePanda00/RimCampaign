@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
@@ -18,6 +18,8 @@ namespace RimCampaign.Runtime
         public double Health;
         public int Phase;
         public bool Ended, HealthLocked;
+        public bool Active=true;
+        public int FallenUntil=-1;
         public List<int> PendingPhases=new List<int>();
         public Dictionary<string,int> Cooldowns = new Dictionary<string,int>();
         public Dictionary<string,Dictionary<string,string>> ModuleState = new Dictionary<string,Dictionary<string,string>>();
@@ -29,6 +31,7 @@ namespace RimCampaign.Runtime
             Scribe_Values.Look(ref Id,"id"); Scribe_Values.Look(ref TemplateJson,"template");
             Scribe_References.Look(ref Proxy,"proxy"); Scribe_Values.Look(ref Health,"health");
             Scribe_Values.Look(ref HealthLocked,"healthLocked");
+            Scribe_Values.Look(ref Active,"active",true);Scribe_Values.Look(ref FallenUntil,"fallenUntil",-1);
             Scribe_Collections.Look(ref PendingPhases,"pendingPhases",LookMode.Value);
             if(Scribe.mode==LoadSaveMode.PostLoadInit&&PendingPhases==null)PendingPhases=new List<int>();
             Scribe_Values.Look(ref Phase,"phase"); Scribe_Values.Look(ref Ended,"ended");
@@ -49,6 +52,11 @@ namespace RimCampaign.Runtime
     // Its normal renderer/verbs/ability caster remain usable; encounter HP never uses body-part HP.
     public class BossMapComponent : MapComponent
     {
+        // Encounter adapters can constrain AI without changing a reusable boss template.
+        public static event Func<Pawn,bool> BehaviorPermission;
+        public static event Func<Pawn,Thing,bool> TargetPermission;
+        public static bool BehaviorsAllowed(Pawn p)=>BehaviorPermission==null||BehaviorPermission.GetInvocationList().Cast<Func<Pawn,bool>>().All(f=>f(p));
+        public static bool TargetAllowed(Pawn p,Thing t)=>TargetPermission==null||TargetPermission.GetInvocationList().Cast<Func<Pawn,Thing,bool>>().All(f=>f(p,t));
         public List<BossRecord> Records = new List<BossRecord>();
         readonly Dictionary<string,IBossBehaviorModule> modules = new Dictionary<string,IBossBehaviorModule>();
         readonly Dictionary<Pawn,BossRecord> byPawn = new Dictionary<Pawn,BossRecord>();
@@ -59,6 +67,13 @@ namespace RimCampaign.Runtime
             return owner!=null&&owner.byPawn.TryGetValue(pawn,out var record)&&!record.Ended?record:null;
         }
         public override void FinalizeInit(){base.FinalizeInit();byPawn.Clear();foreach(var r in Records)if(r.Proxy!=null&&!r.Ended)byPawn[r.Proxy]=r;}
+        public BossRecord Attach(Pawn pawn,BossTemplate template,string id)
+        {
+            if(byPawn.TryGetValue(pawn,out var existing))return existing;
+            if(template==null||!double.IsFinite(template.MaxHealth)||template.MaxHealth<=0||template.Phases.Count==0)throw new InvalidOperationException("Boss needs finite health and phases.");
+            var record=new BossRecord{Id=id,Proxy=pawn,TemplateJson=Json.Write(template),Health=template.MaxHealth,Active=template.InitiallyActive,HealthLocked=template.Phases[0].LockHealth,PendingPhases=new List<int>{0}};
+            Records.Add(record);byPawn[pawn]=record;return record;
+        }
         public Pawn Spawn(BossTemplate template, IntVec3 cell, Faction faction, string id, Pawn source=null, Profile profile=null)
         {
             if(template==null||template.MaxHealth<=0||template.Phases.Count==0)throw new InvalidOperationException("Boss needs health and phases.");
@@ -78,30 +93,38 @@ namespace RimCampaign.Runtime
                 if(copy.def.size!=IntVec2.One)throw new InvalidOperationException("Boss proxies require a one-cell Pawn race.");
                 if(source!=null)foreach(var module in Modules.All.Where(d=>d.Category=="BossPawnImport"))
                     ((IBossPawnImportModule)Modules.Create(module.Id)).Import(source,copy);
-                var record=new BossRecord{Id=id,Proxy=copy,TemplateJson=Json.Write(template),Health=template.MaxHealth,HealthLocked=template.Phases[0].LockHealth,PendingPhases=new List<int>{0}};
-                GenSpawn.Spawn(copy,cell,map);Records.Add(record);byPawn[copy]=record;
+                Attach(copy,template,id);
+                GenSpawn.Spawn(copy,cell,map);
                 copy.jobs.StopAll();if(copy.playerSettings!=null)copy.playerSettings.hostilityResponse=HostilityResponseMode.Ignore;
                 return copy;
-            } catch {if(!copy.Destroyed)copy.Destroy(DestroyMode.Vanish);throw;}
+            } catch {Records.RemoveAll(r=>r.Proxy==copy);byPawn.Remove(copy);if(!copy.Destroyed)copy.Destroy(DestroyMode.Vanish);throw;}
         }
         public void ReceiveHit(BossRecord record, DamageInfo damage)
         {
-            if(record.Ended)return;
-            var change=BossHealth.Apply(record.Template,record.Health,record.Phase,record.HealthLocked,damage.Amount);
+            if(record.Ended||!record.Active||record.FallenUntil>=0)return;
+            damage=BossComponents.Incoming(record,damage);
+            var change=BossHealth.Apply(record.Template,record.Health,record.Phase,record.HealthLocked,damage.Amount*Math.Max(0,record.Template.DamageMultiplier));
             var previous=record.Health;
             record.Health=change.Health;record.Phase=change.Phase;record.HealthLocked=change.Locked;
-            Current.Game.GetComponent<CampaignController>()?.RecordTriggerDamage(record.Proxy,previous-record.Health);
+            CampaignController.ForMap(map)?.RecordTriggerDamage(record.Proxy,previous-record.Health);
             foreach(int entered in change.Entered){record.PendingPhases.Add(entered);Signal("BossPhase",record);}
             if(change.Entered.Count>0)record.Proxy.jobs.StopAll();
             FlushPhases(record);
-            if(record.Health<=0){record.Ended=true;Signal("BossDefeated",record);record.Proxy.Kill(damage);}
+            if(record.Health<=0){
+                if(record.Template.ReviveAfterSeconds>0){
+                    record.FallenUntil=Find.TickManager.TicksGame+(int)(record.Template.ReviveAfterSeconds*60);
+                    record.Proxy.jobs.StopAll();record.Proxy.health.forceDowned=true;
+                    record.Proxy.health.AddHediff(DefDatabase<HediffDef>.GetNamed("RC_BossIncapacitated"));
+                    Signal("BossDowned",record);
+                }else{record.Ended=true;Signal("BossDefeated",record);record.Proxy.Kill(damage);}
+            }
         }
         void FlushPhases(BossRecord record) {
-            var controller=Current.Game.GetComponent<CampaignController>();
+            var controller=CampaignController.ForMap(map);
             while(record.PendingPhases.Count>0&&controller!=null&&controller.QueueBossPhase(map,record,record.PendingPhases[0]))record.PendingPhases.RemoveAt(0);
         }
 
-        void Signal(string kind,BossRecord record) => Current.Game.GetComponent<CampaignController>()?.EmitBossSignal(map,kind,record.Id);
+        void Signal(string kind,BossRecord record) => CampaignController.ForMap(map)?.EmitBossSignal(map,kind,record.Id);
         public override void MapComponentTick()
         {
             int tick=Find.TickManager.TicksGame;
@@ -110,9 +133,24 @@ namespace RimCampaign.Runtime
                 var pawn=record.Proxy;
                 if(pawn==null||pawn.Destroyed||pawn.Dead||!pawn.Spawned||pawn.Map!=map){record.Ended=true;Signal("BossRemoved",record);continue;}
                 if(tick%60==0&&pawn.needs!=null)foreach(var need in pawn.needs.AllNeeds)need.CurLevelPercentage=1;
+                if(record.FallenUntil>=0){
+                    if(tick>=record.FallenUntil){
+                        record.FallenUntil=-1;record.Health=record.Template.MaxHealth;pawn.health.forceDowned=false;
+                        var fallen=pawn.health.hediffSet.GetFirstHediffOfDef(DefDatabase<HediffDef>.GetNamed("RC_BossIncapacitated"));
+                        if(fallen!=null)pawn.health.RemoveHediff(fallen);
+                        pawn.health.CheckForStateChange(null,null);Signal("BossRevived",record);
+                    }
+                    continue;
+                }
+                if(!record.Active)continue;
+                if(tick%60==0&&record.Template.RegenerationPerSecond>0)record.Health=Math.Min(record.Template.MaxHealth,record.Health+record.Template.RegenerationPerSecond);
                 if(tick%6!=0)continue;
-                var target=map.mapPawns.AllPawnsSpawned.Where(p=>p!=pawn&&!p.Dead&&!p.Downed&&p.HostileTo(pawn)&&!p.Fogged())
-                    .OrderBy(p=>p.Position.DistanceToSquared(pawn.Position)).FirstOrDefault();
+                if(!BehaviorsAllowed(pawn))continue;
+                var fixedTarget=string.IsNullOrEmpty(record.Template.TargetRole)?null:CampaignController.ForMap(map)?.ResolveTriggerPawn(record.Template.TargetRole);
+                Thing target=fixedTarget?.Spawned==true&&!fixedTarget.Dead&&!fixedTarget.Downed&&TargetAllowed(pawn,fixedTarget)?fixedTarget:map.attackTargetsCache.GetPotentialTargetsFor(pawn).Select(t=>t.Thing)
+                    .Where(t=>t!=pawn&&t.Spawned&&t.HostileTo(pawn)&&!t.Fogged()&&(!(t is Pawn p)||!p.Dead&&!p.Downed)&&TargetAllowed(pawn,t)).OrderBy(t=>t.Position.DistanceToSquared(pawn.Position)).FirstOrDefault();
+                BossComponents.Visit(record,(plugin,context)=>plugin.Tick(context,target));
+                if(pawn.Faction==Faction.OfPlayer)continue;
                 if(target==null)continue;
                 var actions=record.Template.Phases[record.Phase].Behaviors;
                 foreach(var action in actions) {
@@ -135,17 +173,20 @@ namespace RimCampaign.Runtime
             }
         }
         public override void ExposeData(){base.ExposeData();Scribe_Collections.Look(ref Records,"campaignBosses",LookMode.Deep);if(Records==null)Records=new List<BossRecord>();}
+        // Encounter gates (such as waiting for a checkpoint) also define whether
+        // the boss is active for presentation, not just whether its AI may act.
+        public static bool ShouldShowHealthBar(BossRecord boss)=>boss!=null&&!boss.Ended&&boss.Active&&boss.Proxy?.Spawned==true&&BehaviorsAllowed(boss.Proxy);
         public override void MapComponentOnGUI()
         {
             if(Find.CurrentMap!=map)return;
             float y=72;
-            foreach(var boss in Records.Where(r=>!r.Ended&&r.Proxy?.Spawned==true)) {
+            foreach(var boss in Records.Where(ShouldShowHealthBar)) {
                 var rect=new Rect(UI.screenWidth*.3f,y,UI.screenWidth*.4f,42);
                 Widgets.DrawBoxSolid(rect,new Color(.08f,.09f,.12f,.85f));
                 Widgets.DrawBoxSolid(new Rect(rect.x+8,rect.y+28,rect.width-16,7),Color.black);
                 Widgets.DrawBoxSolid(new Rect(rect.x+8,rect.y+28,(rect.width-16)*(float)(boss.Health/boss.Template.MaxHealth),7),new Color(.72f,.15f,.12f));
                 Text.Anchor=TextAnchor.MiddleCenter;
-                Widgets.Label(new Rect(rect.x,rect.y,rect.width,27),boss.Template.Name+"  "+boss.Health.ToString("N0")+" / "+boss.Template.MaxHealth.ToString("N0")+"  ·  "+boss.Template.Phases[boss.Phase].Name+(boss.HealthLocked?"  [锁血]":""));
+                Widgets.Label(new Rect(rect.x,rect.y,rect.width,27),RcText.T(boss.Template.Name)+"  "+boss.Health.ToString("N0")+" / "+boss.Template.MaxHealth.ToString("N0")+"  ·  "+(boss.FallenUntil>=0?RcText.T("重新站起：")+Math.Ceiling((boss.FallenUntil-Find.TickManager.TicksGame)/60f)+"s":RcText.T(boss.Template.Phases[boss.Phase].Name))+(boss.HealthLocked?RimCampaign.Runtime.RcText.T("  [锁血]"):""));
                 Text.Anchor=TextAnchor.UpperLeft;y+=48;
             }
         }
@@ -153,8 +194,9 @@ namespace RimCampaign.Runtime
     }
     public sealed class BossContext : IBossContext
     {
-        readonly BossRecord record;readonly Pawn target;
-        public BossContext(BossRecord record,Pawn target,IDictionary<string,string> state){this.record=record;this.target=target;State=state;}
+        readonly BossRecord record;readonly Thing target;
+        public BossContext(BossRecord record,Pawn target,IDictionary<string,string> state):this(record,(Thing)target,state){}
+        public BossContext(BossRecord record,Thing target,IDictionary<string,string> state){this.record=record;this.target=target;State=state;}
         public object Pawn=>record.Proxy; public object Target=>target; public object Map=>record.Proxy.Map;
         public double Health=>record.Health;public double MaxHealth=>record.Template.MaxHealth;
         public int Phase=>record.Phase;public int Tick=>Find.TickManager.TicksGame;
@@ -206,7 +248,7 @@ namespace RimCampaign.Runtime
     static class BossThinking
     {
         static bool Prefix(Pawn ___pawn,ref ThinkTreeDef __0,ref ThinkResult __result)
-        {if(BossMapComponent.For(___pawn)==null)return true;__0=null;__result=ThinkResult.NoJob;return false;}
+        {if(___pawn.Faction==Faction.OfPlayer||BossMapComponent.For(___pawn)==null)return true;__0=null;__result=ThinkResult.NoJob;return false;}
     }
     [HarmonyPatch(typeof(Pawn),nameof(Pawn.Kill))]
     static class BossIndependentLife

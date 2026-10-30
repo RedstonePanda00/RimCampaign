@@ -1,0 +1,3 @@
+<Defs>
+  <JobDef><defName>RC_SceneInteraction</defName><driverClass>RimCampaign.Runtime.JobDriver_SceneInteraction</driverClass><reportString>正在操作 TargetA。</reportString><casualInterruptible>false</casualInterruptible></JobDef>
+</Defs>

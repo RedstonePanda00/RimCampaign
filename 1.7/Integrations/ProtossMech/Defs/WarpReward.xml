@@ -1,0 +1,42 @@
+<Defs>
+  <ThingDef>
+    <defName>RC_PMCRewardBeacon</defName>
+    <label>折跃接收点</label>
+    <thingClass>ThingWithComps</thingClass>
+    <category>Ethereal</category>
+    <drawerType>None</drawerType>
+    <tickerType>Normal</tickerType>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <comps>
+      <li Class="ProtossMech.CompProperties_WarpIn">
+        <strikeFleck>PM_WarpInStrike</strikeFleck>
+        <continuousFleck>PM_WarpInFleck</continuousFleck>
+        <fleckScale>1</fleckScale>
+        <fleckSpawnInterval>45</fleckSpawnInterval>
+        <fleckOffsetZ>6</fleckOffsetZ>
+      </li>
+      <li Class="RimCampaign.Integration.ProtossMech.CompProperties_WarpRewardBinding" />
+    </comps>
+  </ThingDef>
+  <ThingDef>
+    <defName>RC_PMCActorBeacon</defName>
+    <label>折跃接收点</label>
+    <thingClass>ThingWithComps</thingClass>
+    <category>Ethereal</category>
+    <drawerType>None</drawerType>
+    <tickerType>Normal</tickerType>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <comps>
+      <li Class="ProtossMech.CompProperties_WarpIn">
+        <strikeFleck>PM_WarpInStrike</strikeFleck>
+        <continuousFleck>PM_WarpInFleck</continuousFleck>
+        <fleckScale>1</fleckScale>
+        <fleckSpawnInterval>45</fleckSpawnInterval>
+        <fleckOffsetZ>6</fleckOffsetZ>
+      </li>
+      <li Class="RimCampaign.Integration.ProtossMech.CompProperties_WarpActorBinding" />
+    </comps>
+  </ThingDef>
+</Defs>

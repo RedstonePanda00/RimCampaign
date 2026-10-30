@@ -1,4 +1,6 @@
-using HarmonyLib;
+﻿using HarmonyLib;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 using RimWorld;
 using Verse;
 
@@ -7,8 +9,8 @@ namespace RimCampaign.Runtime
     static class Overrides
     {
         public static CampaignController For(Pawn pawn) {
-            var c=Current.Game?.GetComponent<CampaignController>();
-            return c?.Active==true&&!c.Transitioning&&pawn!=null&&pawn.Faction==Faction.OfPlayer&&pawn.Map==c.Map?c:null;
+            var c=CampaignController.ForMap(pawn?.MapHeld);
+            return c?.StoryActive==true&&!c.Transitioning&&pawn!=null&&pawn.Faction==Faction.OfPlayer&&pawn.Map==c.Map?c:null;
         }
     }
     [HarmonyPatch(typeof(Need_Food),nameof(Need_Food.NeedInterval))]
@@ -38,12 +40,12 @@ namespace RimCampaign.Runtime
     [HarmonyPatch(typeof(Storyteller),nameof(Storyteller.StorytellerTick))]
     static class StorytellerOverride
     {
-        static bool Prefix(){var c=Current.Game?.GetComponent<CampaignController>();return c?.Active!=true||c.Node.Storyteller;}
+        static bool Prefix(){var c=Current.Game?.GetComponent<CampaignController>();return c?.StoryActive!=true||c.Node.Storyteller;}
     }
     [HarmonyPatch(typeof(Selector),nameof(Selector.Select))]
     static class CinematicSelection
     {
-        static bool Prefix(){var c=Current.Game?.GetComponent<CampaignController>();return c?.Presentation!=true;}
+        static bool Prefix(){var c=CampaignController.Focused;return c?.Presentation!=true;}
     }
     [HarmonyPatch(typeof(HistoryAutoRecorder),nameof(HistoryAutoRecorder.Tick))]
     static class PocketHistoryBaseline
@@ -53,6 +55,20 @@ namespace RimCampaign.Runtime
             // there is already a last history sample when no home map is available.
             if(Current.Game?.GetComponent<CampaignController>()?.Active!=true||Find.AnyPlayerHomeMap!=null||__instance.records.Count!=0)return true;
             __instance.records.Add(0f);return false;
+        }
+    }
+    [HarmonyPatch(typeof(GameComponent_Anomaly),nameof(GameComponent_Anomaly.StartedNewGame))]
+    static class PocketAnomalyInitialization
+    {
+        // Preserve vanilla level/research initialization; only provide a map for its monolith lookup.
+        static Map StartingMap()=>Find.AnyPlayerHomeMap??(Current.Game?.GetComponent<CampaignController>()?.Active==true?Current.Game.GetComponent<CampaignController>().Map:null);
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var getter=AccessTools.PropertyGetter(typeof(Find),nameof(Find.AnyPlayerHomeMap));
+            foreach(var instruction in instructions){
+                if(instruction.Calls(getter)){instruction.opcode=OpCodes.Call;instruction.operand=AccessTools.Method(typeof(PocketAnomalyInitialization),nameof(StartingMap));}
+                yield return instruction;
+            }
         }
     }
 }

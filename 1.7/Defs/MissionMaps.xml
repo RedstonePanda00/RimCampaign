@@ -1,0 +1,27 @@
+<Defs>
+  <WorldObjectDef ParentName="StaticWorldObjectBase">
+    <defName>RC_MissionPreview</defName><label>mission map</label>
+    <worldObjectClass>MapParent</worldObjectClass><texture>World/WorldObjects/TribalSettlement</texture>
+    <mapGenerator>RC_MissionTerrain</mapGenerator><canBePlayerHome>true</canBePlayerHome>
+  </WorldObjectDef>
+  <WorldObjectDef ParentName="Site">
+    <defName>RC_MissionSite</defName><label>mission site</label>
+    <worldObjectClass>RimCampaign.Runtime.MissionSite</worldObjectClass>
+  </WorldObjectDef>
+  <SitePartDef Name="RC_MissionMapPartBase" Abstract="True">
+    <workerClass>SitePartWorker</workerClass>
+    <siteTexture>World/WorldObjects/Sites/Outpost</siteTexture>
+    <expandingIconTexture>World/WorldObjects/Expanding/Sites/Outpost</expandingIconTexture>
+    <applyFactionColorToSiteTexture>true</applyFactionColorToSiteTexture>
+    <description>Complete the objectives at this site.</description>
+  </SitePartDef>
+  <SitePartDef ParentName="RC_MissionMapPartBase"><defName>RC_MissionMapPart</defName><label>mission site</label></SitePartDef>
+  <MapGeneratorDef ParentName="MapCommonBase">
+    <defName>RC_MissionTerrain</defName>
+    <genSteps><li>RocksFromGrid</li><li>RC_MissionLayout</li></genSteps>
+  </MapGeneratorDef>
+  <GenStepDef>
+    <defName>RC_MissionLayout</defName><order>400</order>
+    <genStep Class="RimCampaign.Runtime.GenStep_MissionMap" />
+  </GenStepDef>
+</Defs>

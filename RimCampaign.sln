@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Integration.Cha
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Tests", "Source\RimCampaign.Tests\RimCampaign.Tests.csproj", "{FA93831E-9825-4CD1-8478-529EF16C92BC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimCampaign.Integration.ProtossMech", "Source\RimCampaign.Integration.ProtossMech\RimCampaign.Integration.ProtossMech.csproj", "{C95BCD27-14AB-419F-88E5-C8B09C1FEEF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,6 +52,10 @@ Global
 		{FA93831E-9825-4CD1-8478-529EF16C92BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA93831E-9825-4CD1-8478-529EF16C92BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA93831E-9825-4CD1-8478-529EF16C92BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C95BCD27-14AB-419F-88E5-C8B09C1FEEF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C95BCD27-14AB-419F-88E5-C8B09C1FEEF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C95BCD27-14AB-419F-88E5-C8B09C1FEEF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C95BCD27-14AB-419F-88E5-C8B09C1FEEF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{630D27B8-514D-44E4-906D-06C0E137CC4F} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
@@ -58,5 +64,6 @@ Global
 		{A3311559-DA56-483E-B633-7F8656025E47} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
 		{C376F717-D235-4588-98AA-42F8BFD5A906} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
 		{FA93831E-9825-4CD1-8478-529EF16C92BC} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
+		{C95BCD27-14AB-419F-88E5-C8B09C1FEEF6} = {AE3E09AB-369F-4D0E-B12A-7CA00A0D5C37}
 	EndGlobalSection
 EndGlobal
